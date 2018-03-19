@@ -258,9 +258,16 @@ ViewObjectWidget::ViewObjectWidget (QWidget *parent, const char *name)
     m_mouse_buttons (0),
     m_in_mouse_move (false),
     m_cursor (lay::Cursor::none),
-    m_default_cursor (lay::Cursor::none)
+    m_default_cursor (lay::Cursor::none),
+    m_dpr (1)
 {
-  setMouseTracking (true); 
+#if QT_VERSION > 0x050000
+  m_dpr = devicePixelRatio ();
+#else
+  m_dpr = 1;
+#endif
+
+  setMouseTracking (true);
   setObjectName (QString::fromUtf8 (name));
   setAcceptDrops (true);
 
@@ -419,7 +426,7 @@ BEGIN_PROTECTED
   const DragDropDataBase *dd = get_drag_drop_data (event->mimeData ());
   if (dd) {
 
-    db::DPoint p = m_trans.inverted () * db::DPoint (event->pos ().x (), height () - 1 - event->pos ().y ());
+    db::DPoint p = dpoint_from_coord (event->pos ());
 
     bool done = drag_enter_event (p, dd);
     service_iterator svc = begin_services ();
@@ -464,7 +471,7 @@ BEGIN_PROTECTED
   const DragDropDataBase *dd = get_drag_drop_data (event->mimeData ());
   if (dd) {
 
-    db::DPoint p = m_trans.inverted () * db::DPoint (event->pos ().x (), height () - 1 - event->pos ().y ());
+    db::DPoint p = dpoint_from_coord (event->pos ());
 
     bool done = drag_move_event (p, dd);
     service_iterator svc = begin_services ();
@@ -488,7 +495,7 @@ BEGIN_PROTECTED
   const DragDropDataBase *dd = get_drag_drop_data (event->mimeData ());
   if (dd) {
 
-    db::DPoint p = m_trans.inverted () * db::DPoint (event->pos ().x (), height () - 1 - event->pos ().y ());
+    db::DPoint p = dpoint_from_coord (event->pos ());
 
     bool done = drop_event (p, dd);
     service_iterator svc = begin_services ();
@@ -528,7 +535,7 @@ ViewObjectWidget::do_mouse_move ()
 
     bool done = false; 
     
-    db::DPoint p = m_trans.inverted () * db::DPoint (m_mouse_pressed.x (), height () - 1 - m_mouse_pressed.y ());
+    db::DPoint p = dpoint_from_coord (m_mouse_pressed);
 
     for (std::list<ViewService *>::iterator g = m_grabbed.begin (); !done && g != m_grabbed.end (); ) {
       std::list<ViewService *>::iterator gg = g;
@@ -563,7 +570,7 @@ ViewObjectWidget::do_mouse_move ()
 
     bool done = false; 
 
-    db::DPoint p = m_trans.inverted () * db::DPoint (m_mouse_pos.x (), height () - 1 - m_mouse_pos.y ());
+    db::DPoint p = dpoint_from_coord (m_mouse_pos);
 
     for (std::list<ViewService *>::iterator g = m_grabbed.begin (); !done && g != m_grabbed.end (); ) {
       std::list<ViewService *>::iterator gg = g;
@@ -611,7 +618,7 @@ BEGIN_PROTECTED
 
   unsigned int buttons = qt_to_buttons (e->buttons (), e->modifiers ());
 
-  db::DPoint p = m_trans.inverted () * db::DPoint (e->pos ().x (), height () - 1 - e->pos ().y ());
+  db::DPoint p = dpoint_from_coord (e->pos ());
 
   for (std::list<ViewService *>::iterator g = m_grabbed.begin (); !done && g != m_grabbed.end (); ) {
     std::list<ViewService *>::iterator gg = g;
@@ -723,7 +730,7 @@ BEGIN_PROTECTED
   unsigned int buttons = qt_to_buttons (e->buttons (), e->modifiers ());
   bool horizonal = (e->orientation () == Qt::Horizontal);
 
-  db::DPoint p = m_trans.inverted () * db::DPoint (e->pos ().x (), height () - 1 - e->pos ().y ());
+  db::DPoint p = dpoint_from_coord (e->pos ());
 
   for (std::list<ViewService *>::iterator g = m_grabbed.begin (); !done && g != m_grabbed.end (); ) {
     std::list<ViewService *>::iterator gg = g;
@@ -774,7 +781,7 @@ BEGIN_PROTECTED
   bool done = false; 
 
   m_mouse_pos = e->pos ();
-  db::DPoint p = m_trans.inverted () * db::DPoint (e->pos ().x (), height () - 1 - e->pos ().y ());
+  db::DPoint p = dpoint_from_coord (e->pos ());
 
   for (std::list<ViewService *>::iterator g = m_grabbed.begin (); !done && g != m_grabbed.end (); ) {
     std::list<ViewService *>::iterator gg = g;
@@ -974,8 +981,14 @@ db::DBox
 ViewObjectWidget::mouse_event_viewport () const
 {
   db::DPoint p1 = m_trans.inverted () * db::DPoint (0, 0);
-  db::DPoint p2 = m_trans.inverted () * db::DPoint (width (), height ());
+  db::DPoint p2 = m_trans.inverted () * db::DPoint (width () * double (m_dpr), height () * double (m_dpr));
   return db::DBox (p1, p2);
+}
+
+db::DPoint
+ViewObjectWidget::dpoint_from_coord (const QPoint &pt) const
+{
+  return m_trans.inverted () * db::DPoint (pt.x () * double (m_dpr), (height () - 1 - pt.y ()) * double (m_dpr));
 }
 
 // ---------------------------------------------------------------

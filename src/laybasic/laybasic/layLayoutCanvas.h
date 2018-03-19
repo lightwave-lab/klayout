@@ -367,7 +367,6 @@ private:
   lay::DitherPattern m_dither_pattern;
   lay::LineStyles m_line_styles;
   unsigned int m_oversampling;
-  unsigned int m_dpr;
   double m_gamma;
 
   bool m_need_redraw;

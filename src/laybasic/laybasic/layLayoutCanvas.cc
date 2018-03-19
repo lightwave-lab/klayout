@@ -280,7 +280,6 @@ LayoutCanvas::LayoutCanvas (QWidget *parent, lay::LayoutView *view, const char *
     mp_image (0), mp_image_bg (0), mp_pixmap (0), 
     m_background (0), m_foreground (0), m_active (0),
     m_oversampling (1),
-    m_dpr (1),
     m_need_redraw (false),
     m_redraw_clearing (false),
     m_redraw_force_update (true),
@@ -289,12 +288,6 @@ LayoutCanvas::LayoutCanvas (QWidget *parent, lay::LayoutView *view, const char *
     m_do_end_of_drawing_dm (this, &LayoutCanvas::do_end_of_drawing),
     m_image_cache_size (1)
 {
-#if QT_VERSION > 0x050000
-  m_dpr = devicePixelRatio ();
-#else
-  m_dpr = 1;
-#endif
-
   //  The gamma value used for subsampling: something between 1.8 and 2.2.
   m_gamma = 2.0;
 
@@ -427,7 +420,7 @@ LayoutCanvas::prepare_drawing ()
 {
   if (m_need_redraw) {
 
-    BitmapViewObjectCanvas::set_size (m_viewport_l.width (), m_viewport_l.height (), 1.0 / double (m_oversampling * m_dpr));
+    BitmapViewObjectCanvas::set_size (m_viewport_l.width (), m_viewport_l.height (), 1.0 / double (m_oversampling * dpr ()));
 
     if (! mp_image ||
         (unsigned int) mp_image->width () != m_viewport_l.width () || 
@@ -437,7 +430,7 @@ LayoutCanvas::prepare_drawing ()
       }
       mp_image = new QImage (m_viewport_l.width (), m_viewport_l.height (), QImage::Format_RGB32);
 #if QT_VERSION > 0x050000
-      mp_image->setDevicePixelRatio (double (m_dpr));
+      mp_image->setDevicePixelRatio (double (dpr ()));
 #endif
       if (mp_pixmap) {
         delete mp_pixmap;
@@ -466,7 +459,7 @@ LayoutCanvas::prepare_drawing ()
         ++c;
       }
 
-      mp_redraw_thread->commit (m_layers, m_viewport_l, 1.0 / double (m_oversampling * m_dpr));
+      mp_redraw_thread->commit (m_layers, m_viewport_l, 1.0 / double (m_oversampling * dpr ()));
 
       if (tl::verbosity () >= 20) {
         tl::info << "Restored image from cache";
@@ -516,7 +509,7 @@ LayoutCanvas::prepare_drawing ()
       }
 
       if (m_redraw_clearing) {
-        mp_redraw_thread->start (mp_view->synchronous () ? 0 : mp_view->drawing_workers (), m_layers, m_viewport_l, 1.0 / double (m_oversampling * m_dpr), m_redraw_force_update);
+        mp_redraw_thread->start (mp_view->synchronous () ? 0 : mp_view->drawing_workers (), m_layers, m_viewport_l, 1.0 / double (m_oversampling * dpr ()), m_redraw_force_update);
       } else {
         mp_redraw_thread->restart (m_need_redraw_layer);
       }
@@ -617,7 +610,7 @@ LayoutCanvas::paintEvent (QPaintEvent *)
 
         QImage full_image (*mp_image);
 #if QT_VERSION > 0x050000
-        full_image.setDevicePixelRatio (double (m_dpr));
+        full_image.setDevicePixelRatio (double (dpr ()));
 #endif
         bitmaps_to_image (fg_view_op_vector (), fg_bitmap_vector (), dither_pattern (), line_styles (), &full_image, m_viewport_l.width (), m_viewport_l.height (), false, &m_mutex);
 
@@ -627,7 +620,7 @@ LayoutCanvas::paintEvent (QPaintEvent *)
         } else {
           QImage subsampled_image (m_viewport.width (), m_viewport.height (), mp_image->format ());
 #if QT_VERSION > 0x050000
-          subsampled_image.setDevicePixelRatio (double (m_dpr));
+          subsampled_image.setDevicePixelRatio (double (dpr ()));
 #endif
           subsample (full_image, subsampled_image, m_oversampling, m_gamma);
           *mp_pixmap = QPixmap::fromImage (subsampled_image); // Qt 4.6.0 workaround
@@ -641,7 +634,7 @@ LayoutCanvas::paintEvent (QPaintEvent *)
 
         QImage subsampled_image (m_viewport.width (), m_viewport.height (), mp_image->format ());
 #if QT_VERSION > 0x050000
-        subsampled_image.setDevicePixelRatio (double (m_dpr));
+        subsampled_image.setDevicePixelRatio (double (dpr ()));
 #endif
         subsample (*mp_image, subsampled_image, m_oversampling, m_gamma);
         *mp_pixmap = QPixmap::fromImage (subsampled_image);
@@ -666,7 +659,7 @@ LayoutCanvas::paintEvent (QPaintEvent *)
       full_image.fill (0);
 
 #if QT_VERSION > 0x050000
-      full_image.setDevicePixelRatio (double (m_dpr));
+      full_image.setDevicePixelRatio (double (dpr ()));
 #endif
       bitmaps_to_image (fg_view_op_vector (), fg_bitmap_vector (), dither_pattern (), line_styles (), &full_image, m_viewport_l.width (), m_viewport_l.height (), false, &m_mutex);
 
@@ -676,7 +669,7 @@ LayoutCanvas::paintEvent (QPaintEvent *)
       } else {
         QImage subsampled_image (m_viewport.width (), m_viewport.height (), QImage::Format_ARGB32);
 #if QT_VERSION > 0x050000
-        subsampled_image.setDevicePixelRatio (double (m_dpr));
+        subsampled_image.setDevicePixelRatio (double (dpr ()));
 #endif
         subsample (full_image, subsampled_image, m_oversampling, m_gamma);
         painter.drawPixmap (QPoint (0, 0), QPixmap::fromImage (subsampled_image));
@@ -878,7 +871,7 @@ LayoutCanvas::screenshot ()
   QImage img (m_viewport.width (), m_viewport.height (), QImage::Format_RGB32);
   img.fill (m_background);
 
-  DetachedViewObjectCanvas vo_canvas (background_color (), foreground_color (), active_color (), m_viewport_l.width (), m_viewport_l.height (), 1.0 / double (m_oversampling * m_dpr), &img);
+  DetachedViewObjectCanvas vo_canvas (background_color (), foreground_color (), active_color (), m_viewport_l.width (), m_viewport_l.height (), 1.0 / double (m_oversampling * dpr ()), &img);
 
   //  and paint the background objects. It uses "img" to paint on.
   do_render_bg (m_viewport_l, vo_canvas);
@@ -906,8 +899,8 @@ LayoutCanvas::resizeEvent (QResizeEvent *)
   m_image_cache.clear ();
 
   //  set the viewport to the new size
-  m_viewport.set_size (width () * m_dpr, height () * m_dpr);
-  m_viewport_l.set_size (width () * m_oversampling * m_dpr, height () * m_oversampling * m_dpr);
+  m_viewport.set_size (width () * dpr (), height () * dpr ());
+  m_viewport_l.set_size (width () * m_oversampling * dpr (), height () * m_oversampling * dpr ());
   mouse_event_trans (m_viewport.trans ());
   do_redraw_all (true);
   viewport_changed_event ();
