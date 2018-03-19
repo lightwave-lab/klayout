@@ -899,6 +899,11 @@ public:
   db::DBox mouse_event_viewport () const;
 
   /**
+   *  @brief Converts a mouse or screen position to a db::DPoint in micron units
+   */
+  db::DPoint dpoint_from_coord (const QPoint &pt) const;
+
+  /**
    *  @brief Set the default cursor
    *
    *  The default cursor is shown when no mouse event sets the cursor.
@@ -976,6 +981,14 @@ protected:
    */
   void mouse_event_trans (const db::DCplxTrans &trans);
 
+  /**
+   *  @brief Gets the device pixel ratio of the output device
+   */
+  unsigned int dpr ()
+  {
+    return m_dpr;
+  }
+
 private:
   friend class lay::ViewObject;
   friend class lay::ViewService;
@@ -995,6 +1008,7 @@ private:
   unsigned int m_mouse_buttons;
   bool m_in_mouse_move;
   lay::Cursor::cursor_shape m_cursor, m_default_cursor;
+  unsigned int m_dpr;
 
   void do_mouse_move ();
   void begin_mouse_event (lay::Cursor::cursor_shape cursor = lay::Cursor::keep);
