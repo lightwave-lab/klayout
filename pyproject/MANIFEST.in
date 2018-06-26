@@ -1,0 +1,2 @@
+include klayout/*.so
+include *.dylib
