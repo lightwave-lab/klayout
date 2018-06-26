@@ -33,7 +33,8 @@
 
 #include "gsiExpression.h"
 #include "gsiObject.h"
-#include "gsiSerialisation.h"
+#include "gsiIterators.h"
+#include "gsiCallback.h"
 #include "gsiMethods.h"
 
 #include <list>
@@ -145,6 +146,14 @@ public:
   }
 
   /**
+   *  @brief Gets the module name
+   */
+  const std::string &module () const
+  {
+    return m_module;
+  }
+
+  /**
    *  @brief Gets the documentation string
    */
   const std::string &doc () const
@@ -180,6 +189,12 @@ public:
   void add_child_class (const ClassBase *cls);
 
   /**
+   *  @brief Adds a subclass
+   *  Subclasses are the ones that derive from us (opposite of base)
+   */
+  void add_subclass (const ClassBase *cls);
+
+  /**
    *  @brief Iterates all child classes (begin)
    */
   tl::weak_collection<ClassBase>::const_iterator begin_child_classes () const
@@ -211,6 +226,23 @@ public:
     return collection ().end ();
   }
  
+  /**
+   *  @brief Iterates all freshly registered classes (begin)
+   *  This collection is emptied on "merge_declarations".
+   */
+  static class_iterator begin_new_classes ()
+  {
+    return new_collection ().begin ();
+  }
+
+  /**
+   *  @brief Iterates all freshly registered classes (begin)
+   */
+  static class_iterator end_new_classes ()
+  {
+    return new_collection ().end ();
+  }
+
   /**
    *  @brief Iterates the methods (begin)
    */
@@ -492,6 +524,14 @@ public:
   }
 
   /**
+   *  @brief Returns true, if the class is an external class provided by Python or Ruby code
+   */
+  virtual bool is_external () const
+  {
+    return false;
+  }
+
+  /**
    *  @brief Post-construction initialization
    *
    *  This method will be called by the GSI system to provide initialization after 
@@ -548,6 +588,7 @@ public:
 
 protected:
   static const class_collection &collection ();
+  static const class_collection &new_collection ();
 
   const tl::weak_collection<ClassBase> &subclasses () const
   {
@@ -559,20 +600,27 @@ protected:
     m_name = n;
   }
 
+  void set_module (const std::string &m)
+  {
+    m_module = m;
+  }
+
   void set_parent (const ClassBase *parent);
   void set_base (const ClassBase *base);
 
 private:
+  bool m_initialized;
   const ClassBase *mp_base, *mp_parent;
   std::string m_doc;
   Methods m_methods;
   std::vector<MethodBase *> m_callbacks, m_constructors;
   std::string m_name;
+  std::string m_module;
   tl::weak_collection<ClassBase> m_child_classes, m_subclasses;
   mutable std::auto_ptr<PerClassClientSpecificData> mp_data[ClientIndex::MaxClientIndex];
 
   static class_collection *mp_class_collection;
-  static unsigned int m_class_count;
+  static class_collection *mp_new_class_collection;
 
   //  No copying
   ClassBase (const ClassBase &other);

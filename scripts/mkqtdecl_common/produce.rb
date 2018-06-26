@@ -27,6 +27,8 @@ require 'reader_ext.rb'
 input_file = "all.db"
 conf_file = "mkqtdecl.conf"
 cls_list = nil
+excl_list = {} 
+modn = "Qt"
 $gen_dir = "generated"
 
 while ARGV.size > 0
@@ -35,8 +37,15 @@ while ARGV.size > 0
     input_file = ARGV.shift
   elsif o == "-c"
     cls_list = ARGV.shift
+  elsif o == "-x"
+    excl_file = ARGV.shift
+    File.open(excl_file, "r") do |file|
+      file.each_line { |l| excl_list[l.chop] = true }
+    end
   elsif o == "-s"
     conf_file = ARGV.shift
+  elsif o == "-m"
+    modn = ARGV.shift
   else
     raise("Invalid option #{o} - usage is 'produce.rb -s mkqtdecl.conf -i all.db -c QWidget,QSizePolicy'")
   end
@@ -362,6 +371,9 @@ class CPPStruct
     (self.body_decl || []).each do |bd|
 
       if bd.is_a?(CPPDeclaration) && ! bd.template_decl
+
+        # only public ctors are considered - currently protected ones are not used
+        bd.visibility == :public || next
 
         func = bd.type.func
         if func
@@ -1285,6 +1297,8 @@ end
 
 class BindingProducer
 
+  attr_accessor :modn
+
   # @brief Read the input file (JSON)
   # 
   # This method will set up the binding producer for generating
@@ -1293,6 +1307,7 @@ class BindingProducer
   def read(input_file)
 
     @source_files = nil
+    @classes = nil
     @ext_decls = []
 
     File.open(input_file, "r") do |file|
@@ -1386,6 +1401,8 @@ class BindingProducer
     while cont
 
       (cls, clsn) = make_cls_names(decl_obj)
+      @classes ||= []
+      @classes << clsn
 
       if index > 0
         ofile_name = "gsiDecl#{clsn}_#{index}.cc"
@@ -1495,6 +1512,7 @@ END
         methods = {}
         struct.collect_all_methods(methods, conf)
         methods[cls] = struct.collect_ctors
+        needs_adaptor = struct.needs_adaptor(conf)
 
         used_classes = {}
 
@@ -1503,7 +1521,9 @@ END
           m.each do |bd|
 
             vis = bd.visibility
-            if vis == :public || vis == :protected
+            is_signal = conf.event_args(cls, bd.sig(cls))
+
+            if vis == :public || (vis == :protected && needs_adaptor) || is_signal
 
               # don't consider dropped methods
               conf.target_name(cls, bd, mn) || next
@@ -1520,7 +1540,7 @@ END
 
         end
 
-        used_classes.values.map { |uc| uc.myself }.select { |uc| !conf.is_class_dropped?(uc) && uc != cls }.sort.each do |uc|
+        used_classes.values.map { |uc| uc.myself || uc.myself_weak }.select { |uc| !conf.is_class_dropped?(uc) && uc != cls }.sort.each do |uc|
           ofile.puts("#include <#{uc}>")
         end
 
@@ -1535,8 +1555,8 @@ END
     end
 
     ofile.puts("#include \"gsiQt.h\"")
-    ofile.puts("#include \"gsiQtCommon.h\"")
-    ofile.puts("#include \"gsiDeclQtTypeTraits.h\"")
+    ofile.puts("#include \"gsi#{modn}Common.h\"")
+    ofile.puts("#include \"gsiDecl#{modn}TypeTraits.h\"")
 
   end
 
@@ -1561,7 +1581,7 @@ END
     if index == 0
       ofile.puts("namespace gsi")
       ofile.puts("{")
-      ofile.puts("gsi::Class<#{cls}_Namespace> decl_#{cls}_Namespace (\"#{clsn}\",")
+      ofile.puts("gsi::Class<#{cls}_Namespace> decl_#{cls}_Namespace (\"#{modn}\", \"#{clsn}\",")
       ofile.puts("  gsi::Methods(),")
       ofile.puts("  \"@qt\\n@brief This class represents the #{cls} namespace\");")
       ofile.puts("}")
@@ -1597,7 +1617,7 @@ END
     ofile.puts("namespace qt_gsi")
     ofile.puts("{")
     ofile.puts("")
-    ofile.puts("static gsi::Enum<#{cls}::#{en}> decl_#{clsn}_#{en}_Enum (\"#{clsn}_#{en}\",")
+    ofile.puts("static gsi::Enum<#{cls}::#{en}> decl_#{clsn}_#{en}_Enum (\"#{modn}\", \"#{clsn}_#{en}\",")
 
     edecl = []
 
@@ -1618,7 +1638,7 @@ END
     ofile.puts("  \"@qt\\n@brief This class represents the #{cls}::#{en} enum\");")
     ofile.puts("")
 
-    ofile.puts("static gsi::QFlagsClass<#{cls}::#{en} > decl_#{clsn}_#{en}_Enums (\"#{clsn}_QFlags_#{en}\",")
+    ofile.puts("static gsi::QFlagsClass<#{cls}::#{en} > decl_#{clsn}_#{en}_Enums (\"#{modn}\", \"#{clsn}_QFlags_#{en}\",")
     ofile.puts("  \"@qt\\n@brief This class represents the QFlags<#{cls}::#{en}> flag set\");")
     ofile.puts("")
 
@@ -1948,9 +1968,9 @@ END
 
         is_reimp = nil
         if bc_methods_by_name[mid]
-          sig = bd.call_sig
+          call_sig = bd.call_sig
           bc_methods_by_name[mid].each do |bd_base|
-            if bd_base.call_sig == sig
+            if bd_base.call_sig == call_sig
               bd_base.virtual && (is_reimp = bd_base)
               break
             end
@@ -2249,9 +2269,9 @@ END
     if base_cls
       ofile.puts("gsi::Class<#{base_cls}> &qtdecl_#{base_clsn} ();")
       ofile.puts("")
-      ofile.puts("#{decl_type} decl_#{clsn} (" + "qtdecl_#{base_clsn} (), \"#{clsn}" + (needs_adaptor ? "_Native" : "") + "\",")
+      ofile.puts("#{decl_type} decl_#{clsn} (" + "qtdecl_#{base_clsn} (), \"#{modn}\", \"#{clsn}" + (needs_adaptor ? "_Native" : "") + "\",")
     else
-      ofile.puts("#{decl_type} decl_#{clsn} (" + "\"#{clsn}" + (needs_adaptor ? "_Native" : "") + "\",")
+      ofile.puts("#{decl_type} decl_#{clsn} (\"#{modn}\", \"#{clsn}" + (needs_adaptor ? "_Native" : "") + "\",")
     end
     if native_impl
       native_impl.each { |n| n[1] && ofile.puts(n[1] + "+") }
@@ -2287,11 +2307,11 @@ END
 
     if !is_child_class
       # only for top-level classes external declarations are produced currently
-      @ext_decls << "#{struct.kind.to_s} #{cls};\nnamespace gsi { GSIQT_PUBLIC gsi::Class<#{cls}> &qtdecl_#{clsn} (); }\n\n"
+      @ext_decls << "#{struct.kind.to_s} #{cls};\nnamespace gsi { GSI_#{modn.upcase}_PUBLIC gsi::Class<#{cls}> &qtdecl_#{clsn} (); }\n\n"
     end
 
     ofile.puts("")
-    ofile.puts("GSIQT_PUBLIC gsi::Class<#{cls}> &qtdecl_#{clsn} () { return decl_#{clsn}; }")
+    ofile.puts("GSI_#{modn.upcase}_PUBLIC gsi::Class<#{cls}> &qtdecl_#{clsn} () { return decl_#{clsn}; }")
     ofile.puts("")
 
     ofile.puts("}")
@@ -2772,7 +2792,7 @@ END
       ofile.puts("  return methods;")
       ofile.puts("}")
       ofile.puts("")
-      ofile.puts("gsi::Class<#{clsn}_Adaptor> decl_#{clsn}_Adaptor (qtdecl_#{clsn} (), \"#{clsn}\",")
+      ofile.puts("gsi::Class<#{clsn}_Adaptor> decl_#{clsn}_Adaptor (qtdecl_#{clsn} (), \"#{modn}\", \"#{clsn}\",")
       if native_impl
         native_impl.each { |n| n[1] && ofile.puts(n[1] + "+") }
       end
@@ -2882,7 +2902,7 @@ END
 
   def produce_ttfile(conf)
 
-    ttfile_name = "gsiDeclQtTypeTraits.h"
+    ttfile_name = "gsiDecl#{modn}TypeTraits.h"
     ttfile_path = $gen_dir + "/" + ttfile_name
 
     ttfile_path && File.open(ttfile_path, "w") do |ttfile|
@@ -2920,8 +2940,8 @@ END
       ttfile.puts("*  This file has been created automatically")
       ttfile.puts("*/")
       ttfile.puts("")
-      ttfile.puts("#ifndef _HDR_gsiDeclQtTypeTraits")
-      ttfile.puts("#define _HDR_gsiDeclQtTypeTraits")
+      ttfile.puts("#ifndef _HDR_gsiDecl#{modn}TypeTraits")
+      ttfile.puts("#define _HDR_gsiDecl#{modn}TypeTraits")
       ttfile.puts("")
       ttfile.puts("#include \"gsiTypes.h\"")
       ttfile.puts("")
@@ -2932,7 +2952,7 @@ END
 
         if decl_obj.is_a?(CPPStructDeclaration)
 
-          produce_ttfile_traits(ttfile, conf, decl_obj)
+          decl_obj.myself && produce_ttfile_traits(ttfile, conf, decl_obj)
 
         elsif decl_obj.is_a?(CPPNamespace)
 
@@ -2999,12 +3019,12 @@ END
       extfile.puts("*/")
       extfile.puts("")
 
-      extfile.puts("#if !defined(HDR_gsiQtExternals)")
-      extfile.puts("#define HDR_gsiQtExternals")
+      extfile.puts("#if !defined(HDR_gsi#{modn}Externals)")
+      extfile.puts("#define HDR_gsi#{modn}Externals")
       extfile.puts("")
 
-      extfile.puts("#include \"gsiClassBase.h\"")
-      extfile.puts("#include \"gsiQtCommon.h\"")
+      extfile.puts("#include \"gsiClass.h\"")
+      extfile.puts("#include \"gsi#{modn}Common.h\"")
       extfile.puts("")
 
       @ext_decls.each do |ed|
@@ -3021,9 +3041,75 @@ END
 
   end
 
-  def produce_makefile
+  def produce_common_header
 
-    makefile_name = "qtdecl.pri"
+    src_name = "gsi#{modn}Common.h"
+    src_path = $gen_dir + "/" + src_name
+
+    File.open(src_path, "w") do |src|
+
+      src.puts("/**")
+      src.puts(" *  Common header for Qt binding definition library")
+      src.puts(" *")
+      src.puts(" *  DO NOT EDIT THIS FILE. ")
+      src.puts(" *  This file has been created automatically")
+      src.puts(" */")
+
+      src.puts("")
+      src.puts("#include \"tlDefs.h\"")
+      src.puts("")
+      src.puts("#define FORCE_LINK_GSI_#{modn.upcase} void force_link_gsi#{modn}_f () { extern int force_link_gsi#{modn}; force_link_gsi#{modn} = 0; }")
+      src.puts("")
+      src.puts("#if !defined(HDR_gsi#{modn}Common_h)")
+      src.puts("# define HDR_gsi#{modn}Common_h")
+      src.puts("")
+      src.puts("# ifdef MAKE_GSI_#{modn.upcase}_LIBRARY")
+      src.puts("#   define GSI_#{modn.upcase}_PUBLIC           DEF_INSIDE_PUBLIC")
+      src.puts("#   define GSI_#{modn.upcase}_PUBLIC_TEMPLATE  DEF_INSIDE_PUBLIC_TEMPLATE")
+      src.puts("#   define GSI_#{modn.upcase}_LOCAL            DEF_INSIDE_LOCAL")
+      src.puts("# else")
+      src.puts("#   define GSI_#{modn.upcase}_PUBLIC           DEF_OUTSIDE_PUBLIC")
+      src.puts("#   define GSI_#{modn.upcase}_PUBLIC_TEMPLATE  DEF_OUTSIDE_PUBLIC_TEMPLATE")
+      src.puts("#   define GSI_#{modn.upcase}_LOCAL            DEF_OUTSIDE_LOCAL")
+      src.puts("# endif")
+      src.puts("")
+      src.puts("#endif")
+
+      puts("#{src_name} written.")
+
+    end
+
+  end
+
+  def produce_main_source
+
+    src_name = "gsi#{modn}Main.cc"
+    src_path = $gen_dir + "/" + src_name
+
+    File.open(src_path, "w") do |src|
+
+      src.puts("/**")
+      src.puts(" *  Main source file for Qt binding definition library")
+      src.puts(" *")
+      src.puts(" *  DO NOT EDIT THIS FILE. ")
+      src.puts(" *  This file has been created automatically")
+      src.puts(" */")
+
+      src.puts("")
+      src.puts("#include \"gsi#{modn}Common.h\"")
+      src.puts("")
+      src.puts("GSI_#{modn.upcase}_PUBLIC int force_link_gsi#{modn} = 0;")
+      src.puts("")
+
+      puts("#{src_name} written.")
+
+    end
+
+  end
+
+  def produce_pri
+
+    makefile_name = modn + ".pri"
     makefile_path = $gen_dir + "/" + makefile_name
 
     File.open(makefile_path, "w") do |makefile|
@@ -3035,14 +3121,29 @@ END
       makefile.puts("#  This file has been created automatically")
       makefile.puts("#")
 
+      makefile.puts("")
+      makefile.puts("SOURCES += \\")
+      makefile.puts("  gsi#{modn}Main.cc \\")
       if @source_files
-        makefile.puts("")
-        makefile.puts("SOURCES += \\")
         makefile.puts(@source_files.collect { |s| "  $$PWD/" + s }.join(" \\\n"))
       end
 
+      makefile.puts("")
+      makefile.puts("HEADERS += gsi#{modn}Common.h")
+      makefile.puts("")
+
       puts("#{makefile_name} written.")
 
+    end
+
+  end
+
+  def produce_class_list
+
+    File.open("class_list.txt", "w") do |list|
+      (@classes || []).each do |c|
+        list.puts(c)
+      end
     end
 
   end
@@ -3058,6 +3159,7 @@ File.open(conf_file, "r") do |file|
 end
 
 bp = BindingProducer::new
+bp.modn = modn
 bp.read(input_file)
 
 puts("Collecting used enums ..")
@@ -3074,15 +3176,26 @@ if cls_list
   end
 else
   bp.prod_list(conf).each do |decl_obj|
-    bp.produce_cpp_from_decl(conf, decl_obj)
+    if decl_obj.myself && !excl_list[decl_obj.myself] 
+      bp.produce_cpp_from_decl(conf, decl_obj)
+    end
   end
 end
+
+puts("Producing class list")
+bp.produce_class_list
 
 puts("Producing type traits file ..")
 bp.produce_ttfile(conf)
 
-puts("Producing .pro file ..")
-bp.produce_makefile
+puts("Producing main source file ..")
+bp.produce_main_source
+
+puts("Producing common header file ..")
+bp.produce_common_header
+
+puts("Producing .pri file ..")
+bp.produce_pri
 
 puts("Producing external declarations ..")
 bp.produce_externals

@@ -58,7 +58,9 @@ HEADERS = \
     layNativePlugin.h \
     laySystemPaths.h \
     layMacroEditorSetupPage.h \
-    layPasswordDialog.h
+    layPasswordDialog.h \
+    layForceLink.h \
+    layInit.h
 
 FORMS = \
     ClipDialog.ui \
@@ -163,7 +165,9 @@ SOURCES = \
     layNativePlugin.cc \
     laySystemPaths.cc \
     layMacroEditorSetupPage.cc \
-    layPasswordDialog.cc
+    layPasswordDialog.cc \
+    layForceLink.cc \
+    layInit.cc
 
 RESOURCES = layBuildInMacros.qrc \
     layHelpResources.qrc \
@@ -188,11 +192,14 @@ win32 {
 INCLUDEPATH += $$DESTDIR/laybasic/laybasic
 DEPENDPATH += $$DESTDIR/laybasic/laybasic
 
-INCLUDEPATH += $$GSIQT_INC
-DEPENDPATH += $$GSIQT_INC
+INCLUDEPATH += $$QTBASIC_INC
+DEPENDPATH += $$QTBASIC_INC
 
 equals(HAVE_QTBINDINGS, "1") {
-  LIBS += -lklayout_gsiqt
+  LIBS += -lklayout_qtbasic -lklayout_QtGui -lklayout_QtXml -lklayout_QtCore
+  equals(HAVE_QT5, "1") {
+    LIBS += -lklayout_QtWidgets
+  }
 }
 
 INCLUDEPATH += $$RBA_INC
@@ -212,4 +219,3 @@ equals(HAVE_PYTHON, "1") {
 } else {
   LIBS += -lklayout_pyastub
 }
-

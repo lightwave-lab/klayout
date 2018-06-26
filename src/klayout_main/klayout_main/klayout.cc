@@ -34,15 +34,37 @@
 #include "pya.h"
 #include "gsiExternalMain.h"
 
+#include "tlArch.h"
+
 #include "version.h"
 
 //  required to force linking of the "ext" and "lib" module
-#include "extForceLink.h"
 #include "libForceLink.h"
 #include "antForceLink.h"
 #include "imgForceLink.h"
-#ifdef HAVE_RUBY
+#if defined(HAVE_RUBY)
 #include "drcForceLink.h"
+#endif
+
+#if defined(HAVE_QTBINDINGS)
+
+//  pulls in the Qt GSI binding modules
+# include "gsiQtGuiExternals.h"
+# include "gsiQtCoreExternals.h"
+# include "gsiQtXmlExternals.h"
+# include "gsiQtSqlExternals.h"
+# include "gsiQtNetworkExternals.h"
+# include "gsiQtDesignerExternals.h"
+
+FORCE_LINK_GSI_QTCORE
+FORCE_LINK_GSI_QTGUI
+FORCE_LINK_GSI_QTXML
+FORCE_LINK_GSI_QTDESIGNER
+FORCE_LINK_GSI_QTNETWORK
+FORCE_LINK_GSI_QTSQL
+
+#else
+# define QT_EXTERNAL_BASE(x)
 #endif
 
 #include <QTranslator>
@@ -212,6 +234,7 @@ klayout_main_cont (int &argc, char **argv)
 
   try {
 
+    //  initialize the Python interpreter
     pya::PythonInterpreter::initialize ();
 
     //  this registers the gsi definitions
@@ -236,7 +259,10 @@ klayout_main_cont (int &argc, char **argv)
       lay::enable_signal_handler_gui (true);
     }
 
+    //  configures the application with the command line arguments
     app->parse_cmd (argc, argv);
+
+    //  initialize the application
     app->init_app ();
 
     /* TODO: this kills valgrind

@@ -15,20 +15,14 @@ FORMS = \
   BrowserPanel.ui \
   BrowseShapesConfigPage.ui \
   BrowseShapesForm.ui \
-  CIFReaderOptionPage.ui \
-  CIFWriterOptionPage.ui \
   CellSelectionForm.ui \
   ClearLayerModeDialog.ui \
   ConfigurationDialog.ui \
   CopyCellModeDialog.ui \
-  DXFReaderOptionPage.ui \
-  DXFWriterOptionPage.ui \
   DeleteCellModeDialog.ui \
   DuplicateLayerDialog.ui \
   EditStipplesForm.ui \
   FlattenInstOptionsDialog.ui \
-  GDS2ReaderOptionPage.ui \
-  GDS2WriterOptionPage.ui \
   GridNetConfigPage.ui \
   LayerMappingWidget.ui \
   LayerSourceDialog.ui \
@@ -58,7 +52,6 @@ FORMS = \
   NewCellPropertiesDialog.ui \
   NewLayerPropertiesDialog.ui \
   NewLayoutPropertiesDialog.ui \
-  OASISWriterOptionPage.ui \
   OpenLayoutModeDialog.ui \
   PropertiesDialog.ui \
   RenameCellDialog.ui \
@@ -70,7 +63,6 @@ FORMS = \
   UserPropertiesForm.ui \
   UserPropertiesEditForm.ui \
   SpecificLoadLayoutOptionsDialog.ui \
-  CommonReaderOptionsPage.ui \
   SelectLineStyleForm.ui \
   LayoutViewConfigPage6a.ui \
   EditLineStylesForm.ui
@@ -103,8 +95,6 @@ SOURCES = \
   layCellSelectionForm.cc \
   layCellTreeModel.cc \
   layCellView.cc \
-  layCIFReaderPlugin.cc \
-  layCIFWriterPlugin.cc \
   layColorPalette.cc \
   layConfigurationDialog.cc \
   layConverters.cc \
@@ -113,16 +103,12 @@ SOURCES = \
   layDisplayState.cc \
   layDitherPattern.cc \
   layDrawing.cc \
-  layDXFReaderPlugin.cc \
-  layDXFWriterPlugin.cc \
   layEditable.cc \
   layEditStipplesForm.cc \
   layEditStippleWidget.cc \
   layFileDialog.cc \
   layFinder.cc \
   layFixedFont.cc \
-  layGDS2ReaderPlugin.cc \
-  layGDS2WriterPlugin.cc \
   layGridNet.cc \
   layHierarchyControlPanel.cc \
   layLayerControlPanel.cc \
@@ -138,7 +124,6 @@ SOURCES = \
   layMarker.cc \
   layMouseTracker.cc \
   layMove.cc \
-  layOASISWriterPlugin.cc \
   layObjectInstPath.cc \
   layParsedLayerSource.cc \
   layPlugin.cc \
@@ -168,15 +153,12 @@ SOURCES = \
   rdbMarkerBrowser.cc \
   rdbMarkerBrowserDialog.cc \
   rdbMarkerBrowserPage.cc \
-  layOASISReaderPlugin.cc \
-  layCommonReaderPlugin.cc \
   layLineStyles.cc \
   laySelectLineStyleForm.cc \
   layLineStylePalette.cc \
   layEditLineStylesForm.cc \
   layEditLineStyleWidget.cc \
   layBackgroundAwareTreeStyle.cc \
-  gsiDeclLayTechnologies.cc
 
 HEADERS = \
   gtf.h \
@@ -197,8 +179,6 @@ HEADERS = \
   layCellSelectionForm.h \
   layCellTreeModel.h \
   layCellView.h \
-  layCIFReaderPlugin.h \
-  layCIFWriterPlugin.h \
   layColorPalette.h \
   layConfigurationDialog.h \
   layConverters.h \
@@ -207,16 +187,12 @@ HEADERS = \
   layDisplayState.h \
   layDitherPattern.h \
   layDrawing.h \
-  layDXFReaderPlugin.h \
-  layDXFWriterPlugin.h \
   layEditable.h \
   layEditStipplesForm.h \
   layEditStippleWidget.h \
   layFileDialog.h \
   layFinder.h \
   layFixedFont.h \
-  layGDS2ReaderPlugin.h \
-  layGDS2WriterPlugin.h \
   layGridNet.h \
   layHierarchyControlPanel.h \
   layLayerControlPanel.h \
@@ -232,7 +208,6 @@ HEADERS = \
   layMarker.h \
   layMouseTracker.h \
   layMove.h \
-  layOASISWriterPlugin.h \
   layObjectInstPath.h \
   layParsedLayerSource.h \
   layPlugin.h \
@@ -262,8 +237,6 @@ HEADERS = \
   rdbMarkerBrowserDialog.h \
   rdbMarkerBrowser.h \
   rdbMarkerBrowserPage.h \
-  layOASISReaderPlugin.h \
-  layCommonReaderPlugin.h \
   layLineStyles.h \
   laySelectLineStyleForm.h \
   layLineStylePalette.h \
@@ -277,10 +250,13 @@ INCLUDEPATH += $$TL_INC $$GSI_INC $$DB_INC $$RDB_INC
 DEPENDPATH += $$TL_INC $$GSI_INC $$DB_INC $$RDB_INC
 LIBS += -L$$DESTDIR -lklayout_tl -lklayout_gsi -lklayout_db -lklayout_rdb
 
-INCLUDEPATH += $$GSIQT_INC
-DEPENDPATH += $$GSIQT_INC
+INCLUDEPATH += $$QTBASIC_INC
+DEPENDPATH += $$QTBASIC_INC
 
 equals(HAVE_QTBINDINGS, "1") {
-  LIBS += -lklayout_gsiqt
+  LIBS += -lklayout_qtbasic -lklayout_QtGui -lklayout_QtCore
+  equals(HAVE_QT5, "1") {
+    LIBS += -lklayout_QtWidgets
+  }
 }
 

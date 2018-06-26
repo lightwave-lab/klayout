@@ -21,7 +21,7 @@
 */
 
 #include "bdConverterMain.h"
-#include "dbCIFWriter.h"
+#include "dbCIFFormat.h"
 
 BD_PUBLIC int strm2cif (int argc, char *argv[])
 {

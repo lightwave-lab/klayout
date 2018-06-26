@@ -20,11 +20,16 @@
 
 */
 
-
 #include "gsiDecl.h"
-#include "gsiQtExternals.h"
 #include "gsiSignals.h"
 #include "layMainWindow.h"
+
+#if defined(HAVE_QTBINDINGS)
+# include "gsiQtGuiExternals.h"
+# include "gsiQtWidgetsExternals.h"  // for Qt5
+#else
+# define QT_EXTERNAL_BASE(x)
+#endif
 
 namespace gsi
 {
@@ -38,7 +43,7 @@ void enable_edits (lay::MainWindow * /*main_window*/, bool enable)
   }
 }
 
-Class<lay::MainWindow> decl_MainWindow (QT_EXTERNAL_BASE (QMainWindow) "MainWindow", 
+Class<lay::MainWindow> decl_MainWindow (QT_EXTERNAL_BASE (QMainWindow) "lay", "MainWindow",
 
   //  QMainWindow interface
   gsi::method ("menu", &lay::MainWindow::menu,

@@ -20,11 +20,8 @@
 
 */
 
-
 #include "gsiDecl.h"
 #include "gsiDeclBasic.h"
-#include "gsiQtExternals.h"
-
 #include "layBrowserDialog.h"
 #include "layBrowserPanel.h"
 
@@ -35,6 +32,17 @@
 #include <QApplication>
 
 #include <limits>
+
+#if defined(HAVE_QTBINDINGS)
+# include "gsiQtGuiExternals.h"
+# include "gsiQtWidgetsExternals.h"
+
+FORCE_LINK_GSI_QTGUI
+FORCE_LINK_GSI_QTWIDGETS // for Qt5
+
+#else
+# define QT_EXTERNAL_BASE(x)
+#endif
 
 namespace gsi
 {
@@ -120,7 +128,7 @@ struct DoubleValue
   bool has_value () const { return h; }
 };
 
-Class<DoubleValue> decl_DoubleValue ("DoubleValue", 
+Class<DoubleValue> decl_DoubleValue ("lay", "DoubleValue",
   gsi::method ("has_value?", &DoubleValue::has_value,
     "@brief True, if a value is present"
   ) +
@@ -149,7 +157,7 @@ struct IntValue
   bool has_value () const { return h; }
 };
 
-Class<IntValue> decl_IntValue ("IntValue", 
+Class<IntValue> decl_IntValue ("lay", "IntValue",
   gsi::method ("has_value?", &IntValue::has_value,
     "@brief True, if a value is present"
   ) +
@@ -178,7 +186,7 @@ struct StringValue
   bool has_value ()           const { return h; }
 };
 
-Class<StringValue> decl_StringValue ("StringValue", 
+Class<StringValue> decl_StringValue ("lay", "StringValue",
   gsi::method ("has_value?", &StringValue::has_value,
     "@brief True, if a value is present"
   ) +
@@ -207,7 +215,7 @@ struct StringListValue
   bool has_value () const                        { return h; }
 };
 
-Class<StringListValue> decl_StringListValue ("StringListValue", 
+Class<StringListValue> decl_StringListValue ("lay", "StringListValue",
   gsi::method ("has_value?", &StringListValue::has_value,
     "@brief True, if a value is present"
   ) +
@@ -267,7 +275,7 @@ BrowserDialog_Stub *new_browser_dialog_static_and_parent (QWidget *parent, const
 }
 #endif
 
-Class<BrowserDialog_Stub> decl_BrowserDialog (QT_EXTERNAL_BASE (QDialog) "BrowserDialog",
+Class<BrowserDialog_Stub> decl_BrowserDialog (QT_EXTERNAL_BASE (QDialog) "lay", "BrowserDialog",
   gsi::constructor ("new", &new_browser_dialog_with_source,
     "@brief Creates a HTML browser window with a \\BrowserSource as the source of HTML code\n"
     "@args source\n"
@@ -404,7 +412,7 @@ static BrowserSource_Stub *new_html (const std::string &html)
   return new BrowserSource_Stub (html);
 }
 
-Class<lay::BrowserSource> decl_BrowserSource ("BrowserSource_Native",
+Class<lay::BrowserSource> decl_BrowserSource ("lay", "BrowserSource_Native",
   gsi::method ("get", &lay::BrowserSource::get),
   "@hide\n@alias BrowserSource"
 );
@@ -415,7 +423,7 @@ Class<lay::BrowserSource> &laybasicdecl_BrowserSource ()
   return decl_BrowserSource;
 }
 
-Class<BrowserSource_Stub> decl_BrowserSourceStub ("BrowserSource",
+Class<BrowserSource_Stub> decl_BrowserSourceStub ("lay", "BrowserSource",
   gsi::constructor ("new|#new_html", &new_html,
     "@brief construct a BrowserSource object with a default HTML string\n"
     "\n"
@@ -453,7 +461,7 @@ lay::BrowserPanel *new_browser_panel (QWidget *parent)
   return new lay::BrowserPanel (parent);
 }
 
-Class<lay::BrowserPanel> decl_BrowserPanel (QT_EXTERNAL_BASE (QWidget) "BrowserPanel",
+Class<lay::BrowserPanel> decl_BrowserPanel (QT_EXTERNAL_BASE (QWidget) "lay", "BrowserPanel",
   gsi::constructor ("new", &new_browser_panel_with_source,
     "@brief Creates a HTML browser widget with a \\BrowserSource as the source of HTML code\n"
     "@args parent, source\n"
@@ -701,7 +709,7 @@ static tl::Variant ask_item (const std::string &title, const std::string &label,
 
 struct InputDialog { };
 
-Class<InputDialog> decl_InputDialog ("InputDialog", 
+Class<InputDialog> decl_InputDialog ("lay", "InputDialog",
   gsi::method ("#get_string", &get_string,
     "@brief Open an input dialog requesting a string\n"
     "@args title, label, value\n"
@@ -958,7 +966,7 @@ static tl::Variant ask_save_file_name (const std::string &title, const std::stri
   }
 }
 
-Class<FileDialog> decl_FileDialog ("FileDialog", 
+Class<FileDialog> decl_FileDialog ("lay", "FileDialog",
   gsi::method ("#get_existing_dir", &get_existing_dir,
     "@brief Open a dialog to select a directory\n"
     "@args title, dir\n"
@@ -1165,7 +1173,7 @@ static int warning (const std::string &title, const std::string &text, int butto
 
 struct MessageBox { };
 
-Class<MessageBox> decl_MessageBox (QT_EXTERNAL_BASE (QMainWindow) "MessageBox",
+Class<MessageBox> decl_MessageBox (QT_EXTERNAL_BASE (QMainWindow) "lay", "MessageBox",
   gsi::method ("Ok|#b_ok",               &b_ok,              "@brief A constant describing the 'Ok' button") +
   gsi::method ("Cancel|#b_cancel",       &b_cancel,          "@brief A constant describing the 'Cancel' button") +
   gsi::method ("Yes|#b_yes",             &b_yes,             "@brief A constant describing the 'Yes' button") +

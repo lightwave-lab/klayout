@@ -11,21 +11,15 @@ SOURCES = \
   dbBox.cc \
   dbBoxConvert.cc \
   dbBoxScanner.cc \
-  dbCommonReader.cc \
   dbCell.cc \
   dbCellGraphUtils.cc \
   dbCellHullGenerator.cc \
   dbCellInst.cc \
   dbCellMapping.cc \
-  dbCIF.cc \
-  dbCIFReader.cc \
-  dbCIFWriter.cc \
   dbClipboard.cc \
   dbClipboardData.cc \
   dbClip.cc \
-  dbDXF.cc \
-  dbDXFReader.cc \
-  dbDXFWriter.cc \
+  dbCommonReader.cc \
   dbEdge.cc \
   dbEdgePair.cc \
   dbEdgePairRelations.cc \
@@ -33,13 +27,7 @@ SOURCES = \
   dbEdgeProcessor.cc \
   dbEdges.cc \
   dbFillTool.cc \
-  dbForceLinkStreams.cc \
   dbFuzzyCellMapping.cc \
-  dbGDS2.cc \
-  dbGDS2ReaderBase.cc \
-  dbGDS2Reader.cc \
-  dbGDS2WriterBase.cc \
-  dbGDS2Writer.cc \
   dbGlyphs.cc \
   dbHershey.cc \
   dbInstances.cc \
@@ -59,9 +47,6 @@ SOURCES = \
   dbManager.cc \
   dbMatrix.cc \
   dbMemStatistics.cc \
-  dbOASIS.cc \
-  dbOASISReader.cc \
-  dbOASISWriter.cc \
   dbObject.cc \
   dbPath.cc \
   dbPCellDeclaration.cc \
@@ -85,6 +70,7 @@ SOURCES = \
   dbStatic.cc \
   dbStream.cc \
   dbStreamLayers.cc \
+  dbTechnology.cc \
   dbTestSupport.cc \
   dbText.cc \
   dbTextWriter.cc \
@@ -94,13 +80,16 @@ SOURCES = \
   dbVector.cc \
   dbWriter.cc \
   dbWriterTools.cc \
-  contrib/dbGDS2Converter.cc \
-  contrib/dbGDS2Text.cc \
-  contrib/dbGDS2TextReader.cc \
-  contrib/dbGDS2TextWriter.cc \
+  dbVariableWidthPath.cc \
+  dbNamedLayerReader.cc \
+  dbEdgesToContours.cc \
+  dbForceLink.cc \
+  dbPlugin.cc \
+  dbInit.cc \
   gsiDeclDbBox.cc \
   gsiDeclDbCell.cc \
   gsiDeclDbCellMapping.cc \
+  gsiDeclDbCommonStreamOptions.cc \
   gsiDeclDbEdge.cc \
   gsiDeclDbEdgePair.cc \
   gsiDeclDbEdgePairs.cc \
@@ -123,15 +112,13 @@ SOURCES = \
   gsiDeclDbShape.cc \
   gsiDeclDbShapeProcessor.cc \
   gsiDeclDbShapes.cc \
+  gsiDeclDbTechnologies.cc \
   gsiDeclDbText.cc \
   gsiDeclDbTilingProcessor.cc \
   gsiDeclDbTrans.cc \
   gsiDeclDbVector.cc \
   gsiDeclDbLayoutDiff.cc \
   gsiDeclDbGlyphs.cc \
-    dbVariableWidthPath.cc \
-    dbNamedLayerReader.cc \
-    dbEdgesToContours.cc
 
 HEADERS = \
   dbArray.h \
@@ -144,15 +131,10 @@ HEADERS = \
   dbCellHullGenerator.h \
   dbCellInst.h \
   dbCellMapping.h \
-  dbCIF.h \
-  dbCIFReader.h \
-  dbCIFWriter.h \
   dbClipboardData.h \
   dbClipboard.h \
   dbClip.h \
-  dbDXF.h \
-  dbDXFReader.h \
-  dbDXFWriter.h \
+  dbCommonReader.h \
   dbEdge.h \
   dbEdgePair.h \
   dbEdgePairRelations.h \
@@ -162,11 +144,6 @@ HEADERS = \
   dbEdgesToContours.h \
   dbFillTool.h \
   dbFuzzyCellMapping.h \
-  dbGDS2.h \
-  dbGDS2ReaderBase.h \
-  dbGDS2Reader.h \
-  dbGDS2WriterBase.h \
-  dbGDS2Writer.h \
   dbHash.h \
   dbHersheyFont.h \
   dbHershey.h \
@@ -188,9 +165,6 @@ HEADERS = \
   dbMatrix.h \
   dbMemStatistics.h \
   dbMetaInfo.h \
-  dbOASIS.h \
-  dbOASISReader.h \
-  dbOASISWriter.h \
   dbObject.h \
   dbObjectTag.h \
   dbObjectWithProperties.h \
@@ -216,6 +190,7 @@ HEADERS = \
   dbStream.h \
   dbStreamLayers.h \
   dbTestSupport.h \
+  dbTechnology.h \
   dbText.h \
   dbTextWriter.h \
   dbTilingProcessor.h \
@@ -225,15 +200,13 @@ HEADERS = \
   dbVector.h \
   dbWriter.h \
   dbWriterTools.h \
-  contrib/dbGDS2Converter.h \
-  contrib/dbGDS2Text.h \
-  contrib/dbGDS2TextReader.h \
-  contrib/dbGDS2TextWriter.h \
-    dbCommonReader.h \
-    dbGlyphs.h \
-    dbCommon.h \
-    dbVariableWidthPath.h \
-    dbNamedLayerReader.h
+  dbGlyphs.h \
+  dbCommon.h \
+  dbVariableWidthPath.h \
+  dbNamedLayerReader.h \
+  dbForceLink.h \
+  dbPlugin.h \
+  dbInit.h
 
 RESOURCES = \
   dbResources.qrc

@@ -35,6 +35,12 @@ class CPPObject
     nil
   end
 
+  # delivers a string representation of the "weak" name or nil if the object does not have a name 
+  # to contribute. "weak names" are such of second order - e.g. forward declarations.
+  def myself_weak
+    nil
+  end
+
   # delivers a CPPQualifiedId representation of the object's location or nil if the object
   # does not have a location to contribute
   def myid
@@ -155,8 +161,13 @@ module QualifiedNameResolver
     @id2obj = {}
     self.children.each do |d|
       d.myself && (@id2obj[d.myself] = d)
-      d.set_parent(self)
     end 
+    self.children.each do |d|
+      d.myself_weak && (@id2obj[d.myself_weak] ||= d)
+    end 
+    self.children.each do |d|
+      d.set_parent(self)
+    end
     # Add other children, for example contributed by base classes
     if self.respond_to?(:other_children)
       self.other_children.each do |d|
@@ -169,6 +180,11 @@ module QualifiedNameResolver
     @id2obj.keys.sort.each do |k|
       puts("--> #{k}")
     end
+  end
+
+  # by default the objects don't have a weak identity
+  def myself_weak
+    nil
   end
 
   # returns a list of names of child objects
@@ -360,10 +376,11 @@ class CPPStructDeclaration
   end
 
   def remove(d)
-    self.struct.body_decl.delete(d)
+    self.struct.body_decl && self.struct.body_decl.delete(d)
   end
 
   def insert(d)
+    self.struct.body_decl ||= []
     self.struct.body_decl << d
   end
 
@@ -374,20 +391,29 @@ class CPPStructDeclaration
     c = [ self ]
 
     (self.struct.base_classes || []).each do |bc|
-      bc_obj = self.parent.resolve_qid(bc.class_id)
-      # NOTE: it may look strange to test whether the base class is the class itself but
-      # since we do a half-hearted job of resolving template variants, this may happen
-      # if we derive a template specialization from another one (specifically 
-      # "template<class T> struct is_default_constructible : is_default_constructible<> { .. }"
-      if bc_obj != self && bc_obj.is_a?(CPPStructDeclaration)
-        c << bc_obj
-        c += bc_obj.children
-        c += bc_obj.other_children
+      # The parent may be null for template base classes which are 
+      # forward-declared .. we're not interested in this case.
+      if self.parent
+        bc_obj = self.parent.resolve_qid(bc.class_id)
+        # NOTE: it may look strange to test whether the base class is the class itself but
+        # since we do a half-hearted job of resolving template variants, this may happen
+        # if we derive a template specialization from another one (specifically 
+        # "template<class T> struct is_default_constructible : is_default_constructible<> { .. }"
+        if bc_obj != self && bc_obj.is_a?(CPPStructDeclaration)
+          c << bc_obj
+          c += bc_obj.children
+          c += bc_obj.other_children
+        end
       end
     end
 
     c
 
+  end
+
+  def myself_weak
+    # the weak identity will also include forward declarations
+    self.struct.id.to_s
   end
 
   def myself

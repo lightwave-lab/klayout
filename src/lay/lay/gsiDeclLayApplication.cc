@@ -20,13 +20,27 @@
 
 */
 
-
 #include "layApplication.h"
 #include "layMainWindow.h"
 #include "laySignalHandler.h"
 #include "gsiDecl.h"
-#include "gsiQtExternals.h"
 #include "tlArch.h"
+
+#if defined(HAVE_QTBINDINGS)
+
+#include "gsiQtGuiExternals.h"
+#include "gsiQtWidgetsExternals.h"  //  for Qt5
+#include "gsiQtCoreExternals.h"
+#include "gsiQtXmlExternals.h"
+
+//  this is here *once*
+FORCE_LINK_GSI_QTCORE
+FORCE_LINK_GSI_QTGUI
+FORCE_LINK_GSI_QTWIDGETS
+//  required because the GSI bindings use QDomDocument
+FORCE_LINK_GSI_QTXML
+
+#endif
 
 namespace gsi
 {
@@ -245,7 +259,11 @@ LAY_PUBLIC make_application_decl (bool non_gui_mode)
   if (non_gui_mode) {
 
     non_gui_app_decl.reset (
-      new Class<lay::NonGuiApplication> (QT_EXTERNAL_BASE (QCoreApplication) "Application",
+      new Class<lay::NonGuiApplication> (
+#if defined(HAVE_QTBINDINGS)
+        QT_EXTERNAL_BASE (QCoreApplication)
+#endif
+        "lay", "Application",
         application_methods<lay::NonGuiApplication> (),
         application_doc ()
       )
@@ -254,7 +272,11 @@ LAY_PUBLIC make_application_decl (bool non_gui_mode)
   } else {
 
     gui_app_decl.reset (
-      new Class<lay::GuiApplication> (QT_EXTERNAL_BASE (QApplication) "Application",
+      new Class<lay::GuiApplication> (
+#if defined(HAVE_QTBINDINGS)
+        QT_EXTERNAL_BASE (QApplication)
+#endif
+        "lay", "Application",
         application_methods<lay::GuiApplication> (),
         application_doc ()
       )

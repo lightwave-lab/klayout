@@ -97,7 +97,7 @@ path<C>::area () const
 }
 
 template <class C> 
-std::string 
+DB_PUBLIC std::string
 path<C>::to_string () const
 {
   std::string s = "(";

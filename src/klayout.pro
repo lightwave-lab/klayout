@@ -16,7 +16,6 @@ SUBDIRS = \
   ant \
   img \
   edt \
-  ext \
   lib \
   plugins \
   buddies \
@@ -39,6 +38,8 @@ equals(HAVE_PYTHON, "1") {
   SUBDIRS += pya
   LANG_DEPENDS += pya
   pya.depends += gsi db
+  SUBDIRS += pymod
+  pymod.depends += pya lay
 } else {
   SUBDIRS += pyastub
   pyastub.depends += gsi
@@ -61,17 +62,17 @@ equals(HAVE_RUBY, "1") {
 
 lym.depends += gsi $$LANG_DEPENDS
 lay.depends += laybasic ant img edt lym
-ext.depends += lay
 lib.depends += db
-buddies.depends += rdb lib $$LANG_DEPENDS
 
 equals(HAVE_QTBINDINGS, "1") {
   SUBDIRS += gsiqt
-  gsiqt.depends += gsi
+  gsiqt.depends += gsi db
   laybasic.depends += gsiqt
+  pymod.depends += gsiqt
 }
 
-plugins.depends += lay ext lib
+plugins.depends += lay lib rdb ant
 
+buddies.depends += plugins $$LANG_DEPENDS
 klayout_main.depends += plugins $$MAIN_DEPENDS
 unit_tests.depends += plugins $$MAIN_DEPENDS

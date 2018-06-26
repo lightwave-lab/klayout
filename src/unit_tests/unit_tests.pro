@@ -23,3 +23,15 @@ HEADERS += \
 !win32 {
   LIBS += -ldl
 }
+
+LIBS += -lklayout_gsi_test
+
+INCLUDEPATH += $$QTBASIC_INC
+DEPENDPATH += $$QTBASIC_INC
+
+equals(HAVE_QTBINDINGS, "1") {
+  LIBS += -lklayout_qtbasic -lklayout_QtGui -lklayout_QtXml
+  equals(HAVE_QT5, "1") {
+    LIBS += -lklayout_QtWidgets
+  }
+}

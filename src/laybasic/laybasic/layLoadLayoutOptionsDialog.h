@@ -25,20 +25,27 @@
 #ifndef HDR_layLoadLayoutOptionsDialog
 #define HDR_layLoadLayoutOptionsDialog
 
-#include "ui_LoadLayoutOptionsDialog.h"
-#include "ui_SpecificLoadLayoutOptionsDialog.h"
 #include "dbStream.h"
 #include "dbLayout.h"
 #include "layStream.h"
 
 #include <string>
+#include <QDialog>
 
 class QScrollArea;
 class QWidget;
+class QAbstractButton;
 
 namespace db
 {
   class LoadLayoutOptions;
+  class Technologies;
+}
+
+namespace Ui
+{
+  class LoadLayoutOptionsDialog;
+  class SpecificLoadLayoutOptionsDialog;
 }
 
 namespace lay
@@ -47,10 +54,9 @@ namespace lay
 class LayoutView;
 class PluginRoot;
 class FileDialog;
-class Technologies;
 
 class LAYBASIC_PUBLIC LoadLayoutOptionsDialog
-  : public QDialog, private Ui::LoadLayoutOptionsDialog
+  : public QDialog
 {
   Q_OBJECT 
 
@@ -58,7 +64,7 @@ public:
   LoadLayoutOptionsDialog (QWidget *parent, const std::string &title);
   ~LoadLayoutOptionsDialog ();
 
-  bool edit_global_options (lay::PluginRoot *config_root, lay::Technologies *technologies);
+  bool edit_global_options (lay::PluginRoot *config_root, db::Technologies *technologies);
   bool get_options (db::LoadLayoutOptions &options);
 
   void show_always (bool sa)
@@ -78,11 +84,12 @@ public slots:
   void current_tech_changed (int index);
 
 private:
+  Ui::LoadLayoutOptionsDialog *mp_ui;
   std::vector< std::pair<StreamReaderOptionsPage *, std::string> > m_pages;
   bool m_show_always;
   int m_technology_index;
   std::vector<db::LoadLayoutOptions> m_opt_array;
-  std::vector<const lay::Technology *> m_tech_array;
+  std::vector<const db::Technology *> m_tech_array;
 
   void commit ();
   void update ();
@@ -90,8 +97,7 @@ private:
 };
 
 class LAYBASIC_PUBLIC SpecificLoadLayoutOptionsDialog
-  : public QDialog,
-    private Ui::SpecificLoadLayoutOptionsDialog
+  : public QDialog
 {
 public:
   SpecificLoadLayoutOptionsDialog (QWidget *parent, db::LoadLayoutOptions *options, const std::string &format_name);
@@ -101,6 +107,7 @@ protected:
   void accept ();
 
 private:
+  Ui::SpecificLoadLayoutOptionsDialog *mp_ui;
   std::string m_format_name;
   db::LoadLayoutOptions *mp_options;
   db::FormatSpecificReaderOptions *mp_specific_options;

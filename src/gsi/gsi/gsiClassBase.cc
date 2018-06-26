@@ -38,15 +38,36 @@ namespace gsi
 //  ClassBase implementation
 
 ClassBase::class_collection *ClassBase::mp_class_collection = 0;
+ClassBase::class_collection *ClassBase::mp_new_class_collection = 0;
+
+namespace {
+  struct type_info_compare
+  {
+    bool operator() (const std::type_info *a, const std::type_info *b) const
+    {
+      return a->before (*b);
+    }
+  };
+}
+
+//  TODO: thread-safe? Unlikely that multiple threads access this member -
+//  we do a initial scan and after this no more write access here.
+static std::map<const std::type_info *, const ClassBase *, type_info_compare> s_ti_to_class;
 
 ClassBase::ClassBase (const std::string &doc, const Methods &mm, bool do_register)
-  : mp_base (0), mp_parent (0), m_doc (doc), m_methods (mm)
+  : m_initialized (false), mp_base (0), mp_parent (0), m_doc (doc), m_methods (mm)
 { 
   if (do_register) {
-    if (! mp_class_collection) {
-      mp_class_collection = new class_collection ();
+
+    //  enter the class into the "new" collection
+    if (! mp_new_class_collection) {
+      mp_new_class_collection = new class_collection ();
     }
-    mp_class_collection->push_back (this);
+    mp_new_class_collection->push_back (this);
+
+    //  invalidate the "typeinfo to class" map
+    s_ti_to_class.clear ();
+
   }
 }
 
@@ -58,13 +79,19 @@ ClassBase::~ClassBase ()
 void
 ClassBase::set_parent (const ClassBase *p)
 {
-  mp_parent = p;
+  if (mp_parent != p) {
+    mp_parent = p;
+    m_initialized = false;
+  }
 }
 
 void
 ClassBase::set_base (const ClassBase *b)
 {
-  mp_base = b;
+  if (mp_base != b) {
+    mp_base = b;
+    m_initialized = false;
+  }
 }
 
 std::string 
@@ -80,18 +107,32 @@ ClassBase::qname () const
 }
 
 void
+ClassBase::add_subclass (const ClassBase *cls)
+{
+  //  TODO: ugly const_cast hack
+  ClassBase *non_const_cls = const_cast<ClassBase *> (cls);
+  m_subclasses.push_back (non_const_cls);
+  m_initialized = false;
+}
+
+void
 ClassBase::add_child_class (const ClassBase *cls)
 {
   //  TODO: ugly const_cast hack
   ClassBase *non_const_cls = const_cast<ClassBase *> (cls);
   non_const_cls->set_parent (this);
-  m_child_classes.push_back (const_cast <ClassBase *> (cls));
+  //  child classes inherit the module of their parent
+  non_const_cls->set_module (module ());
+  m_child_classes.push_back (non_const_cls);
+  m_initialized = false;
 }
 
 bool 
 ClassBase::is_derived_from (const ClassBase *base) const
 {
-  if (base == this) {
+  if (! base) {
+    return false;
+  } else if (base == this) {
     return true;
   } else if (!mp_base) {
     return false;
@@ -183,6 +224,17 @@ ClassBase::collection ()
     return empty;
   } else {
     return *mp_class_collection;
+  }
+}
+
+const ClassBase::class_collection &
+ClassBase::new_collection ()
+{
+  if (!mp_new_class_collection) {
+    static const class_collection empty;
+    return empty;
+  } else {
+    return *mp_new_class_collection;
   }
 }
 
@@ -340,132 +392,158 @@ sm_assign (const char *name, const gsi::ClassBase *cls)
 void
 ClassBase::merge_declarations ()
 {
-  tl_assert (mp_class_collection != 0);
+  if (gsi::ClassBase::begin_new_classes () == gsi::ClassBase::end_new_classes ()) {
+    //  Nothing to do.
+    return;
+  }
 
-  //  merge the extensions to the main declaration
-  static bool merged = false;
-  if (! merged) {
-
-    //  HINT: this code block must be called exactly ONCE!
-    merged = true;
-
-    //  Check for duplicate declarations
-    std::set<const std::type_info *> types;
-    std::set<std::string> names;
-    for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_classes (); c != gsi::ClassBase::end_classes (); ++c) {
-      if (c->declaration () == &*c && !types.insert (&c->type ()).second) {
-        tl::warn << "Duplicate GSI declaration of type " << c->type ().name (); 
-      }
-      if (c->declaration () == &*c && !names.insert (c->declaration ()->name ()).second) {
-        tl::warn << "Duplicate GSI declaration of name " << c->declaration ()->name (); 
-      }
+  //  Check for duplicate declarations
+  std::set<const std::type_info *> types;
+  std::set<std::string> names;
+  for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_classes (); c != gsi::ClassBase::end_classes (); ++c) {
+    if (c->declaration () == &*c && !types.insert (&c->type ()).second) {
+      tl::warn << "Duplicate GSI declaration of type " << c->type ().name ();
     }
-
-    std::vector <const gsi::ClassBase *> to_remove;
-
-    //  Consolidate the classes (merge, remove etc.)
-    for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_classes (); c != gsi::ClassBase::end_classes (); ++c) {
-      if (! c->consolidate()) {
-        to_remove.push_back (&*c);
-      }
+    if (c->declaration () == &*c && !names.insert (c->declaration ()->name ()).second) {
+      tl::warn << "Duplicate GSI declaration of name " << c->declaration ()->name ();
     }
+  }
 
-    //  removed the classes which are no longer required
-    for (std::vector <const gsi::ClassBase *>::const_iterator ed = to_remove.begin (); ed != to_remove.end (); ++ed) {
+  std::vector <const gsi::ClassBase *> to_remove;
+
+  //  Consolidate the classes (merge, remove etc.)
+  for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_new_classes (); c != gsi::ClassBase::end_new_classes (); ++c) {
+    if (! c->consolidate ()) {
+      to_remove.push_back (&*c);
+    }
+  }
+
+  //  removed the classes which are no longer required
+  for (std::vector <const gsi::ClassBase *>::const_iterator ed = to_remove.begin (); ed != to_remove.end (); ++ed) {
+    //  TODO: ugly const_cast hack
+    mp_new_class_collection->erase (const_cast<gsi::ClassBase *> (*ed));
+  }
+
+  //  collect the subclasses of a class
+  for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_new_classes (); c != gsi::ClassBase::end_new_classes (); ++c) {
+    if (c->base ()) {
       //  TODO: ugly const_cast hack
-      mp_class_collection->erase (const_cast<gsi::ClassBase *> (*ed));
+      const_cast<gsi::ClassBase *> (c->base ())->add_subclass (c.operator-> ());
+    }
+  }
+
+  //  Add to the classes the special methods and clean up the method table
+  for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_new_classes (); c != gsi::ClassBase::end_new_classes (); ++c) {
+
+    //  Skip external classes (i.e. provided by Ruby or Python)
+    if (c->is_external ()) {
+      continue;
     }
 
-    //  collect the subclasses of a class
-    for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_classes (); c != gsi::ClassBase::end_classes (); ++c) {
-      if (c->base ()) {
-        //  TODO: ugly const_cast hack
-        const_cast<gsi::ClassBase *> (c->base ())->m_subclasses.push_back (const_cast<gsi::ClassBase *> (c.operator-> ()));
+    std::set<std::pair<std::string, bool> > name_map;
+    for (gsi::ClassBase::method_iterator m = c->begin_methods (); m != c->end_methods (); ++m) {
+      for (gsi::MethodBase::synonym_iterator syn = (*m)->begin_synonyms (); syn != (*m)->end_synonyms (); ++syn) {
+        name_map.insert (std::make_pair (syn->name, (*m)->is_static ()));
       }
     }
 
-    //  Add to the classes the special methods and clean up the method table
-    for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_classes (); c != gsi::ClassBase::end_classes (); ++c) {
+    //  We don't want the declaration object to be non-const except for this case. So
+    //  we const_cast here.
+    gsi::ClassBase *non_const_decl = const_cast<gsi::ClassBase *> (c.operator-> ());
 
-      std::set<std::pair<std::string, bool> > name_map;
-      for (gsi::ClassBase::method_iterator m = c->begin_methods (); m != c->end_methods (); ++m) {
-        for (gsi::MethodBase::synonym_iterator syn = (*m)->begin_synonyms (); syn != (*m)->end_synonyms (); ++syn) {
-          name_map.insert (std::make_pair (syn->name, (*m)->is_static ()));
-        }
-      }
+    if (name_map.find (std::make_pair ("new", true)) == name_map.end ()) {
+      non_const_decl->add_method (sm_default_ctor ("new", &*c), false);
+    }
 
-      //  We don't want the declaration object to be non-const except for this case. So
-      //  we const_cast here.
-      gsi::ClassBase *non_const_decl = const_cast<gsi::ClassBase *> (&*c);
+    //  Note: "unmanage" and "manage" is a better name ...
+    non_const_decl->add_method (sm_keep ("_unmanage"));
+    non_const_decl->add_method (sm_release ("_manage"));
 
-      if (name_map.find (std::make_pair ("new", true)) == name_map.end ()) {
-        non_const_decl->add_method (sm_default_ctor ("new", &*c), false);
-      }
+    if (name_map.find (std::make_pair ("create", false)) == name_map.end ()) {
+      //  deprecate "create"
+      non_const_decl->add_method (sm_create ("_create|#create"));
+    } else {
+      //  fallback name is "_create" to avoid conflicts
+      non_const_decl->add_method (sm_create ("_create"));
+    }
 
-      //  Note: "unmanage" and "manage" is a better name ...
-      non_const_decl->add_method (sm_keep ("_unmanage"));
-      non_const_decl->add_method (sm_release ("_manage"));
-
-      if (name_map.find (std::make_pair ("create", false)) == name_map.end ()) {
-        //  deprecate "create"
-        non_const_decl->add_method (sm_create ("_create|#create"));
+    if (c->can_destroy ()) {
+      if (name_map.find (std::make_pair ("destroy", false)) == name_map.end ()) {
+        //  deprecate "destroy"
+        non_const_decl->add_method (sm_destroy ("_destroy|#destroy"));
       } else {
-        //  fallback name is "_create" to avoid conflicts
-        non_const_decl->add_method (sm_create ("_create"));
+        //  fallback name is "_destroy" to avoid conflicts
+        non_const_decl->add_method (sm_destroy ("_destroy"));
       }
+    }
 
-      if (c->can_destroy ()) {
-        if (name_map.find (std::make_pair ("destroy", false)) == name_map.end ()) {
-          //  deprecate "destroy"
-          non_const_decl->add_method (sm_destroy ("_destroy|#destroy"));
-        } else {
-          //  fallback name is "_destroy" to avoid conflicts
-          non_const_decl->add_method (sm_destroy ("_destroy"));
-        }
-      }
+    if (c->can_copy ()) {
 
-      if (c->can_copy ()) {
-
-        if (name_map.find (std::make_pair ("dup", false)) == name_map.end ()) {
-          non_const_decl->add_method (sm_dup ("dup", &*c));
-        } else {
-          //  fallback name is "_dup" to avoid conflicts
-          non_const_decl->add_method (sm_dup ("_dup", &*c));
-        }
-
-        if (name_map.find (std::make_pair ("assign", false)) == name_map.end ()) {
-          non_const_decl->add_method (sm_assign ("assign", &*c));
-        } else {
-          //  fallback name is "_assign" to avoid conflicts
-          non_const_decl->add_method (sm_assign ("_assign", &*c));
-        }
-
-      }
-
-      if (name_map.find (std::make_pair ("destroyed", false)) == name_map.end ()) {
-        //  deprecate "destroyed"
-        non_const_decl->add_method (sm_destroyed ("_destroyed?|#destroyed?"));
+      if (name_map.find (std::make_pair ("dup", false)) == name_map.end ()) {
+        non_const_decl->add_method (sm_dup ("dup", &*c));
       } else {
-        //  fallback name is "_destroyed" to avoid conflicts
-        non_const_decl->add_method (sm_destroyed ("_destroyed?"));
+        //  fallback name is "_dup" to avoid conflicts
+        non_const_decl->add_method (sm_dup ("_dup", &*c));
       }
 
-      if (name_map.find (std::make_pair ("is_const_object", false)) == name_map.end ()) {
-        //  deprecate "is_const"
-        non_const_decl->add_method (sm_is_const ("_is_const_object?|#is_const_object?"));
+      if (name_map.find (std::make_pair ("assign", false)) == name_map.end ()) {
+        non_const_decl->add_method (sm_assign ("assign", &*c));
       } else {
-        //  fallback name is "_is_const" to avoid conflicts
-        non_const_decl->add_method (sm_is_const ("_is_const_object?"));
+        //  fallback name is "_assign" to avoid conflicts
+        non_const_decl->add_method (sm_assign ("_assign", &*c));
       }
 
     }
 
+    if (name_map.find (std::make_pair ("destroyed", false)) == name_map.end ()) {
+      //  deprecate "destroyed"
+      non_const_decl->add_method (sm_destroyed ("_destroyed?|#destroyed?"));
+    } else {
+      //  fallback name is "_destroyed" to avoid conflicts
+      non_const_decl->add_method (sm_destroyed ("_destroyed?"));
+    }
+
+    if (name_map.find (std::make_pair ("is_const_object", false)) == name_map.end ()) {
+      //  deprecate "is_const"
+      non_const_decl->add_method (sm_is_const ("_is_const_object?|#is_const_object?"));
+    } else {
+      //  fallback name is "_is_const" to avoid conflicts
+      non_const_decl->add_method (sm_is_const ("_is_const_object?"));
+    }
+
+  }
+
+  //  finally merge the new classes into the existing ones
+  if (! mp_class_collection) {
+    mp_class_collection = new class_collection ();
+  }
+  for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_new_classes (); c != gsi::ClassBase::end_new_classes (); ++c) {
+    gsi::ClassBase *non_const_decl = const_cast<gsi::ClassBase *> (c.operator-> ());
+    mp_class_collection->push_back (non_const_decl);
+  }
+  mp_new_class_collection->clear ();
+
+  //  do a full re-initialization - maybe merge_declarations modified existing classes too
+  for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_classes (); c != gsi::ClassBase::end_classes (); ++c) {
+    //  Initialize the method table once again after we have merged the declarations
+    //  TODO: get rid of that const cast
+    (const_cast<gsi::ClassBase *> (&*c))->initialize ();
+
+    //  there should be only main declarations since we merged
+    //  (the declaration==0 case covers dummy declarations introduced by
+    //  lym::ExternalClass)
+    tl_assert (! c->declaration () || c->declaration () == &*c);
   }
 }
 
 void
 ClassBase::initialize ()
 {
+  //  don't initialize again
+  if (m_initialized) {
+    return;
+  }
+
   m_methods.initialize ();
 
   m_constructors.clear ();
@@ -481,11 +559,14 @@ ClassBase::initialize ()
       m_callbacks.push_back (*m);
     }
   }
+
+  m_initialized = true;
 }
 
 void
 ClassBase::add_method (MethodBase *method, bool /*base_class*/)
 {
+  m_initialized = false;
   m_methods.add_method (method);
 }
 
@@ -536,45 +617,33 @@ bool has_class (const std::string &name)
   return class_by_name_no_assert (name) != 0;
 }
 
-namespace
+static void add_class_to_map (const gsi::ClassBase *c)
 {
-
-struct type_info_compare
-{
-  bool operator() (const std::type_info *a, const std::type_info *b) const
-  {
-    return a->before (*b);
+  if (c->declaration () != c) {
+    //  only consider non-extensions
+    return;
   }
-};
 
+  const std::type_info *ti = c->adapted_type_info ();
+  if (! ti) {
+    ti = &c->type ();
+  }
+  if (ti && c->is_of_type (*ti) && !s_ti_to_class.insert (std::make_pair (ti, c)).second) {
+    //  Duplicate registration of this class
+    tl::error << "Duplicate registration of class " << c->name () << " (type " << ti->name () << ")";
+    tl_assert (false);
+  }
 }
-
-//  TODO: thread-safe? Unlikely that multiple threads access this member -
-//  we do a initial scan and after this no more write access here.
-static std::map<const std::type_info *, const ClassBase *, type_info_compare> s_ti_to_class;
 
 const ClassBase *class_by_typeinfo_no_assert (const std::type_info &ti)
 {
   if (s_ti_to_class.empty ()) {
-
     for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_classes (); c != gsi::ClassBase::end_classes (); ++c) {
-
-      if (c->declaration () != c.operator-> ()) {
-        continue;
-      }
-
-      const std::type_info *ti = c->adapted_type_info ();
-      if (! ti) {
-        ti = &c->type ();
-      }
-      if (ti && c->is_of_type (*ti) && !s_ti_to_class.insert (std::make_pair (ti, c.operator-> ())).second) {
-        //  Duplicate registration of this class
-        tl::error << "Duplicate registration of class " << c->name () << " (type " << ti->name () << ")";
-        tl_assert (false);
-      }
-
+      add_class_to_map (c.operator-> ());
     }
-
+    for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_new_classes (); c != gsi::ClassBase::end_new_classes (); ++c) {
+      add_class_to_map (c.operator-> ());
+    }
   }
 
   std::map<const std::type_info *, const ClassBase *, type_info_compare>::const_iterator c = s_ti_to_class.find (&ti);

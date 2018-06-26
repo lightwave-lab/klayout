@@ -35,16 +35,15 @@ namespace gsi
 void GSI_PUBLIC 
 initialize ()
 {
-  //  Allow duplicate initialization without any effect
-  static bool s_is_initialized = false;
-  if (s_is_initialized) {
+  //  do something only if there are new classes
+  if (gsi::ClassBase::begin_new_classes () == gsi::ClassBase::end_new_classes ()) {
     return;
   }
-  s_is_initialized = true;
 
   tl::SelfTimer timer (tl::verbosity () >= 21, "Initializing script environment");
 
-  for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_classes (); c != gsi::ClassBase::end_classes (); ++c) {
+  //  Do a first initialization of the new classes because they might add more classes
+  for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_new_classes (); c != gsi::ClassBase::end_new_classes (); ++c) {
     //  TODO: get rid of that const cast
     (const_cast<gsi::ClassBase *> (&*c))->initialize ();
   }
@@ -52,25 +51,25 @@ initialize ()
   //  merge the extensions to the main declaration
   gsi::ClassBase::merge_declarations ();
 
-  for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_classes (); c != gsi::ClassBase::end_classes (); ++c) {
-    //  Initialize the method table once again after we have merged the declarations
-    //  TODO: get rid of that const cast
-    (const_cast<gsi::ClassBase *> (&*c))->initialize ();
-
-    //  there should be only main declarations since we merged
-    tl_assert (c->declaration () == &*c);
-  }
-
+  //  build or rebuild the variant user class table
+  //  NOTE: as the variant classes are tied to the gsi::Class objects, we can rebuild the table
+  //  and will get the same pointers for the classes that have been there before
   tl::VariantUserClassBase::clear_class_table ();
 
   for (gsi::ClassBase::class_iterator c = gsi::ClassBase::begin_classes (); c != gsi::ClassBase::end_classes (); ++c) {
-    //  Note: for backward compatibility we use lower case names
-    std::string lc = tl::to_lower_case (c->name ());
-    std::string lc_trans = tl::VariantUserClassBase::translate_class_name (lc);
-    tl::VariantUserClassBase::register_user_class (lc, c->var_cls (false));
-    if (lc != lc_trans) {
-      tl::VariantUserClassBase::register_user_class (lc_trans, c->var_cls (false));
+
+    if (! c->is_external ()) {
+
+      //  Note: for backward compatibility we use lower case names
+      std::string lc = tl::to_lower_case (c->name ());
+      std::string lc_trans = tl::VariantUserClassBase::translate_class_name (lc);
+      tl::VariantUserClassBase::register_user_class (lc, c->var_cls (false));
+      if (lc != lc_trans) {
+        tl::VariantUserClassBase::register_user_class (lc_trans, c->var_cls (false));
+      }
+
     }
+
   }
 }
 

@@ -20,20 +20,23 @@
 
 */
 
+/**
+ *  @brief This header provides the definitions for embedding support
+ */
 
 #ifndef _HDR_pya
 #define _HDR_pya
 
 #include "pyaRefs.h"
+#include "pyaCommon.h"
 
-#include "gsi.h"
 #include "gsiInterpreter.h"
 #include "tlScriptError.h"
-#include "pyaCommon.h"
 
 #include <list>
 #include <string>
 #include <set>
+#include <memory>
 
 struct _typeobject;
 typedef _typeobject PyTypeObject;
@@ -58,12 +61,12 @@ namespace pya
 
 #define PYTHON_BEGIN_EXEC \
   try { \
-    PythonInterpreter::instance ()->begin_execution ();
+    if (PythonInterpreter::instance ()) { PythonInterpreter::instance ()->begin_execution (); }
 
 #define PYTHON_END_EXEC \
-    PythonInterpreter::instance ()->end_execution (); \
+    if (PythonInterpreter::instance ()) { PythonInterpreter::instance ()->end_execution (); } \
   } catch (...) { \
-    PythonInterpreter::instance ()->end_execution (); \
+    if (PythonInterpreter::instance ()) { PythonInterpreter::instance ()->end_execution (); } \
     throw; \
   } 
 
@@ -87,7 +90,7 @@ public:
   { }
 };
 
-class MethodTable;
+class PythonModule;
 
 /**
  *  @brief The python interpreter wrapper class
@@ -215,16 +218,6 @@ public:
   std::string version () const;
 
   /**
-   *  @brief Gets the GSI class for a Python class
-   */
-  const gsi::ClassBase *cls_for_type (PyTypeObject *type) const;
-
-  /**
-   *  @brief The reverse: gets a Python class for a GSI class or NULL if there is no binding
-   */
-  PyTypeObject *type_for_cls (const gsi::ClassBase *cls) const;
-
-  /**
    *  @brief Returns the current console
    */
   gsi::Console *current_console () const;
@@ -250,7 +243,7 @@ public:
    *  @brief Returns additional Python-specific documentation for the given method
    *  If no specific documentation exists, an empty string is returned.
    */
-  std::string python_doc (const gsi::MethodBase *method) const;
+  static std::string python_doc (const gsi::MethodBase *);
 
   /**
    *  @brief Returns the singleton reference
@@ -266,22 +259,14 @@ private:
   size_t prepare_trace (PyObject *);
   tl::Variant eval_int (const char *string, const char *filename, int line, bool eval_expr, int context);
   void get_context (int context, PythonRef &globals, PythonRef &locals, const char *file);
-  void add_python_doc (const gsi::ClassBase &cls, const MethodTable *mt, int mid, const std::string &doc);
-  PyMethodDef *make_method_def ();
-  PyGetSetDef *make_getset_def ();
   char *make_string (const std::string &s);
 
-  std::list<PythonRef> m_object_heap;
   std::list<std::string> m_string_heap;
-  std::map<const gsi::MethodBase *, std::string> m_python_doc;
-  std::set<std::string> m_package_paths;
-  std::vector<PyMethodDef *> m_methods_heap;
-  std::vector<PyGetSetDef *> m_getseters_heap;
+
   PythonRef m_stdout_channel, m_stderr_channel;
   PythonPtr m_stdout, m_stderr;
+  std::set<std::string> m_package_paths;
 
-  std::map <PyTypeObject *, const gsi::ClassBase *> m_cls_map;
-  std::map <const gsi::ClassBase *, PyTypeObject *> m_rev_cls_map;
   gsi::Console *mp_current_console;
   std::vector<gsi::Console *> m_consoles;
   gsi::ExecutionHandler *mp_current_exec_handler;
@@ -296,6 +281,7 @@ private:
   PyFrameObject *mp_current_frame;
   std::map<PyObject *, size_t> m_file_id_map;
   wchar_t *mp_py3_app_name;
+  std::auto_ptr<pya::PythonModule> m_pya_module;
 };
 
 }

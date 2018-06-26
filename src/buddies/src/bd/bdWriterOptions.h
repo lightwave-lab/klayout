@@ -24,10 +24,10 @@
 #define HDR_bdWriterOptions
 
 #include "bdCommon.h"
-#include "dbGDS2WriterBase.h"
-#include "dbOASISWriter.h"
-#include "dbDXFWriter.h"
-#include "dbCIFWriter.h"
+#include "dbGDS2Format.h"
+#include "dbOASISFormat.h"
+#include "dbDXFFormat.h"
+#include "dbCIFFormat.h"
 
 #include <string>
 

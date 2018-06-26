@@ -24,11 +24,11 @@
 #define HDR_bdReaderOptions
 
 #include "bdCommon.h"
-#include "dbGDS2Reader.h"
 #include "dbCommonReader.h"
-#include "dbOASISReader.h"
-#include "dbDXFReader.h"
-#include "dbCIFReader.h"
+#include "dbGDS2Format.h"
+#include "dbOASISFormat.h"
+#include "dbDXFFormat.h"
+#include "dbCIFFormat.h"
 
 #include <string>
 
