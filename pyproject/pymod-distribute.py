@@ -11,19 +11,23 @@ import distutils.core
 from delocate.delocating import delocate_wheel  # This is not a builtin package
 
 
+global cwd_path
 global binaries_path
 global pyproj_path
 global pydist_path
 
 def preparation():
     # Set the directories and get into the right one
+    global cwd_path
     global pyproj_path
     global binaries_path
     global pydist_path
 
-    pyproj_path = dirname(realpath(__file__))
-    if isdir(pjoin(pyproj_path, 'pyproject')):
-        pyproj_path += '/pyproject'
+    cwd_path = realpath(os.curdir)
+    if isdir(pjoin(cwd_path, 'pyproject')):
+        pyproj_path = pjoin(cwd_path, 'pyproject')
+    else:
+        pyproj_path = cwd_path
     
     # Right now qt5 release is hard coded,
     # but that would be pretty easy to change
@@ -36,7 +40,7 @@ def preparation():
 
     # Give the project and distribution directories a clean start
     for f in os.listdir(pyproj_path):
-        if f in ['setup.py', 'MANIFEST.in', 'mybuild.sh', basename(__file__)]:
+        if f in ['setup.py', 'MANIFEST.in', 'mybuild.sh', '.gitignore', basename(__file__)]:
             continue
         fullname = pjoin(pyproj_path, f)
         if isdir(fullname):
@@ -51,7 +55,7 @@ def preparation():
 
 def copy_into_pyproject():
     # We need the library "libklayout" files found in binary directory
-    print('Copying binaries into python project')
+    print(' [1] Copying binaries into python project ...')
     dylib_version = '0'
     for filename in iglob(binaries_path + f'/libklayout_*.{dylib_version}.dylib'):
         if '26.0' in filename:  # because these also end with .0.dylib
@@ -71,10 +75,10 @@ def filter_system_and_brew_libs(libname):
 
 
 def distribute_wheel():
-    print('Distributing first wheel with hard links')
+    print(' [2] Distributing first wheel with hard links ...')
     distutils.core.run_setup('setup.py', script_args=['bdist_wheel'])
     wheel_file = list(iglob('dist/*.whl'))[0]
-    print('Making the wheel portable')
+    print(' [3] Making the wheel portable ...')
     delocate_wheel(wheel_file, copy_filt_func = filter_system_and_brew_libs)  # Modifies file in place
     print('Wheel delocation finished')
     return wheel_file
@@ -86,7 +90,8 @@ if __name__ == '__main__':
     wheel_file = distribute_wheel()
     distro_file = pjoin(pydist_path, basename(wheel_file))
     shutil.copy2(wheel_file, distro_file)
-    print('-- You can now reinstall with: --')
+    os.chdir(cwd_path)
+    print(' [4] You can now reinstall with:\n')
     print('pip uninstall klayout')
     print('y')
     print(f'pip install {os.path.relpath(distro_file)}\n')
