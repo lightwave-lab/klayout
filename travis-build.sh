@@ -9,7 +9,7 @@ PING_LOOP_PID=$!
 make build >> build.txt 2>&1
 make deploy >> build.txt 2>&1
 make test >> build.txt 2>&1 || true
-make dropbox-deploy
+#make dropbox-deploy
 
 tail -500 build.txt
 

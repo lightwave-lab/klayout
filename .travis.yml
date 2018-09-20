@@ -54,5 +54,5 @@ install:
 
 script: ./travis-build.sh
 
-after_success:
-  - dropbox-deployment
+# after_success:
+#   - dropbox-deployment
