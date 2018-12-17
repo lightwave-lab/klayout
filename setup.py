@@ -88,6 +88,7 @@ def parallelCCompile(self, sources, output_dir=None, macros=None, include_dirs=N
         n_tries = 2
         while n_tries > 0:
             try:
+                print("Building", obj)
                 self._compile(obj, src, ext, cc_args, extra_postargs, pp_opts)
             except CompileError:
                 n_tries -= 1
@@ -95,7 +96,7 @@ def parallelCCompile(self, sources, output_dir=None, macros=None, include_dirs=N
             else:
                 break
     # convert to list, imap is evaluated on-demand
-    list(multiprocessing.pool.ThreadPool(N).imap(_single_compile, objects))
+    list(multiprocessing.pool.ThreadPool(N).map(_single_compile, objects))
     return objects
 
 
