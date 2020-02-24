@@ -230,7 +230,7 @@ matrix:
           update: true
       env:
         - HOMEBREW_NO_INSTALL_CLEANUP=1
-        - MATRIX_EVAL="brew install python2 || brew link --overwrite python@2"  # deficient python2 in travis's xcode8.3 (no ssl)
+        - MATRIX_EVAL="brew install python@2 || brew link --overwrite python@2"  # deficient python2 in travis's xcode8.3 (no ssl)
         - ARCHFLAGS="-std=c++11"
         - PIP_UPDATE="1"
         - PYTHON_BUILD=true
@@ -271,7 +271,7 @@ matrix:
           update: true
       env:
         - HOMEBREW_NO_INSTALL_CLEANUP=1
-        - MATRIX_EVAL="shopt -s expand_aliases; alias python='/usr/local/bin/python3'; alias pip='/usr/local/bin/pip3';"
+        - MATRIX_EVAL="shopt -s expand_aliases; alias python='/usr/local/bin/python3'; alias pip='/usr/local/bin/pip3'; ls -la /usr/local/bin/;"
         - ARCHFLAGS="-std=c++11"
         - PIP_UPDATE="1"
         - PYTHON_BUILD=true
