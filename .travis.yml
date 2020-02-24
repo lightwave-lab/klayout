@@ -256,6 +256,26 @@ matrix:
 
     # python 3 osx
 
+    # - name: "klayout python3 osx10.14"
+    - name: "cp37-cp37m-macosx_10_14_x86_64.whl"
+      os: osx
+      osx_image: xcode11.3  # macOS 11.3
+      cache:
+        directories:
+        - ccache
+      addons:
+        homebrew:
+          packages:
+            - python3
+            - ccache
+          update: true
+      env:
+        - HOMEBREW_NO_INSTALL_CLEANUP=1
+        - MATRIX_EVAL="shopt -s expand_aliases; alias python='/usr/local/bin/python3'; alias pip='/usr/local/bin/pip3'; ls -la /usr/local/bin/;"
+        - ARCHFLAGS="-std=c++11"
+        - PIP_UPDATE="1"
+        - PYTHON_BUILD=true
+
     # - name: "klayout python3 osx10.13"
     - name: "cp37-cp37m-macosx_10_13_x86_64.whl"
       os: osx
