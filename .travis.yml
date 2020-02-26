@@ -207,7 +207,7 @@ jobs:
     # - name: "klayout python2 osx10.12"
     - name: "cp27-cp27m-macosx_10_12_x86_64.whl"
       os: osx
-      osx_image: xcode8.3  # macOS 10.12
+      osx_image: xcode9.1  # macOS 10.12
       cache:
         directories:
         - ccache
@@ -215,7 +215,7 @@ jobs:
         homebrew:
           packages:
             - ccache
-          update: false
+          update: true
       env:
         - HOMEBREW_NO_INSTALL_CLEANUP=1
         - MATRIX_EVAL="brew install python@2 || brew link --overwrite python@2"  # deficient python2 in travis's xcode8.3 (no ssl)
