@@ -515,6 +515,8 @@ def RunMainBuildBash():
   else:
     parameters += " \\\n  -ruby   %s" % RubyDictionary[ModuleRuby]['exe']
     parameters += " \\\n  -rbinc  %s" % RubyDictionary[ModuleRuby]['inc']
+    if 'inc2' in RubyDictionary[ModuleRuby]:
+      parameters += " \\\n  -rbinc2  %s" % RubyDictionary[ModuleRuby]['inc2']
     parameters += " \\\n  -rblib  %s" % RubyDictionary[ModuleRuby]['lib']
 
   # (H) about Python
