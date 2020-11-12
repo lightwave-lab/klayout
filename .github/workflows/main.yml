@@ -58,7 +58,7 @@ jobs:
       - name: Configure ccache
         run: |
           mkdir -p $GITHUB_WORKSPACE/ccache
-          echo ccache_basedir=$GITHUB_WORKSPACE >> $GITHUB_ENV
+          ccache_basedir=$GITHUB_WORKSPACE
           echo CCACHE_BASEDIR="${ccache_basedir}" >> $GITHUB_ENV
           echo CCACHE_DIR="${ccache_basedir}/ccache" >> $GITHUB_ENV
           echo CCACHE_COMPRESS="true" >> $GITHUB_ENV
