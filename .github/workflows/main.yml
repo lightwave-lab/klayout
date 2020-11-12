@@ -18,6 +18,9 @@ jobs:
   build:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
+    env:
+      MATRIX_EVAL: ${{ matrix.config.custom_script }}
+      PIP_UPDATE: ${{ matrix.config.pip_update }}
     strategy:
       fail-fast: false
       matrix:
@@ -26,9 +29,8 @@ jobs:
             name: "macOS Latest Clang", artifact: "macOS.tar.xz",
             os: macos-latest,
             cc: "clang", cxx: "clang++",
-            env: 
-              MATRIX_EVAL: "echo hello there"
-              PIP_UPDATE: "1"
+            custom_script: "echo hello here",
+            pip_update: "1"
           }
 
     # Steps represent a sequence of tasks that will be executed as part of the job
