@@ -18,7 +18,6 @@ jobs:
   build:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
-    env:
     strategy:
       fail-fast: false
       matrix:
