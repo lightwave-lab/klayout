@@ -303,7 +303,7 @@ matrix:
         - PIP_UPDATE="1"
         - PYTHON_BUILD=true
 
-    # - name: "klayout python3.6.6 osx10.13"
+    # - name: "klayout python3.6.12 osx10.13"
     - name: "cp36-cp36m-macosx_10_13_x86_64.whl"
       os: osx
       osx_image: xcode9.4  # macOS 10.13
@@ -316,7 +316,7 @@ matrix:
             - ccache
           update: true
       env:
-        - MATRIX_EVAL="brew update; brew tap sashkab/python; brew install sashkab/python/python36; brew link --force --overwrite python36; shopt -s expand_aliases; alias python='/usr/local/opt/python36/bin/python3.6'; alias pip='/usr/local/opt/python36/bin/pip3.6';"
+        - MATRIX_EVAL="brew update; brew tap sashkab/python; brew install sashkab/python/python36; brew link --force --overwrite python36; shopt -s expand_aliases; alias python='/usr/local/opt/python@3.6/bin/python3.6'; alias pip='/usr/local/opt/python@3.6/bin/pip3.6';"
         - ARCHFLAGS="-std=c++11"
         - PIP_UPDATE="1"
         - PYTHON_BUILD=true
