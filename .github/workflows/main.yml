@@ -54,14 +54,14 @@ jobs:
             ${{ matrix.config.name }}-ccache-
       
       - name: Configure ccache
-        shell: cmake -P {0}
         run: |
-          file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
-          set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
-          set(ENV{CCACHE_DIR} "${ccache_basedir}/ccache")
-          set(ENV{CCACHE_COMPRESS} "true")
-          set(ENV{CCACHE_COMPRESSLEVEL} "6")
-          set(ENV{CCACHE_MAXSIZE} "2000M")
+          export ccache_basedir=$GITHUB_WORKSPACE
+          export CCACHE_BASEDIR="${ccache_basedir}"
+          export CCACHE_DIR="${ccache_basedir}/ccache"
+          export CCACHE_COMPRESS="true"
+          export CCACHE_COMPRESSLEVEL="6"
+          export CCACHE_MAXSIZE="2000M"
+          mkdir -p $CCACHE_DIR
 
       - name: Install ccache
         run: |
@@ -86,3 +86,21 @@ jobs:
           echo Add other actions to build,
           echo test, and deploy your project.
           env
+
+      - name: Building wheel
+        run: |
+          python setup.py build;
+          python setup.py bdist_wheel;
+          python setup.py install;
+          python setup.py sdist --formats=zip;
+          python testdata/pymod/import_db.py;
+          python testdata/pymod/import_rdb.py;
+          python testdata/pymod/import_tl.py;
+          python testdata/pymod/import_lib.py;
+          python testdata/pymod/pya_tests.py;
+          klayout_version=$(python -c 'import setup; print(setup.Config().version())');
+          mkdir -p deploy/dist-pymod/$klayout_version;
+          cp -a dist/{*.whl,*.zip} deploy/dist-pymod/$klayout_version;
+          python -c 'import klayout.db as db; print(dir(db))';
+          python -c 'import klayout.rdb as rdb; print(dir(rdb))';
+          python -c 'import klayout.tl as tl; print(dir(tl))';
