@@ -21,6 +21,7 @@ jobs:
     env:
       MATRIX_EVAL: ${{ matrix.config.custom_script }}
       PIP_UPDATE: ${{ matrix.config.pip_update }}
+      ARCHFLAGS: "-std=c++11"
     strategy:
       fail-fast: false
       matrix:
@@ -29,7 +30,7 @@ jobs:
             name: "macOS Latest Clang", artifact: "macOS.tar.xz",
             os: macos-latest,
             cc: "clang", cxx: "clang++",
-            custom_script: "echo hello here",
+            custom_script: "shopt -s expand_aliases; alias python='python3'; alias pip='pip3';",
             pip_update: "1"
           }
 
@@ -63,6 +64,10 @@ jobs:
           export CCACHE_MAXSIZE="2000M"
           mkdir -p $CCACHE_DIR
 
+      - name: Installing the correct python version
+        run: |
+          brew install python3
+
       - name: Install ccache
         run: |
           brew install ccache
@@ -71,6 +76,7 @@ jobs:
 
       - name: Preparing for Installation
         run: |
+          env
           eval "${MATRIX_EVAL}"
           if [ "${PIP_UPDATE}" == "1" ]; then
               pip --version;
@@ -80,15 +86,9 @@ jobs:
           fi
           python -c "import distutils.sysconfig as sysconfig; print(sysconfig.__file__)"
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
-          env
-
       - name: Building wheel
         run: |
+          ccache -z;
           python setup.py build;
           python setup.py bdist_wheel;
           python setup.py install;
@@ -104,3 +104,4 @@ jobs:
           python -c 'import klayout.db as db; print(dir(db))';
           python -c 'import klayout.rdb as rdb; print(dir(rdb))';
           python -c 'import klayout.tl as tl; print(dir(tl))';
+          ccache -s;
