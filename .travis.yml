@@ -1,6 +1,7 @@
 branches:
   only:
     - /v\d+\.\d+(\.\d+)?(\S*)?$/  # tag format: *v0.25(.8)(dev14)
+    - /\d+\.\d+$/
     - staging
     - master
 
