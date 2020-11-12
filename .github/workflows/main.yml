@@ -46,7 +46,7 @@ jobs:
           string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
           message("::set-output name=timestamp::${current_date}")
 
-      - name: ccache cache files
+      - name: Caching ccache files
         uses: actions/cache@v1.1.0
         with:
           path: ccache
@@ -54,24 +54,27 @@ jobs:
           restore-keys: |
             ${{ matrix.config.name }}-ccache-
       
+      # Adding a line to GITHUB_ENV is equivalent to exporting it
       - name: Configure ccache
         run: |
-          export ccache_basedir=$GITHUB_WORKSPACE
-          export CCACHE_BASEDIR="${ccache_basedir}"
-          export CCACHE_DIR="${ccache_basedir}/ccache"
-          export CCACHE_COMPRESS="true"
-          export CCACHE_COMPRESSLEVEL="6"
-          export CCACHE_MAXSIZE="2000M"
-          mkdir -p $CCACHE_DIR
+          mkdir -p $GITHUB_WORKSPACE/ccache
+          echo ccache_basedir=$GITHUB_WORKSPACE >> $GITHUB_ENV
+          echo CCACHE_BASEDIR="${ccache_basedir}" >> $GITHUB_ENV
+          echo CCACHE_DIR="${ccache_basedir}/ccache" >> $GITHUB_ENV
+          echo CCACHE_COMPRESS="true" >> $GITHUB_ENV
+          echo CCACHE_COMPRESSLEVEL="6" >> $GITHUB_ENV
+          echo CCACHE_MAXSIZE="2000M" >> $GITHUB_ENV
 
       - name: Installing the correct python version
         run: |
           brew install python3
-
+      
+      # echo "{path}" >> $GITHUB_PATH
+      # Prepends a directory to the system PATH variable for all subsequent actions in the current job.
       - name: Install ccache
         run: |
           brew install ccache
-          export PATH="/usr/local/opt/ccache/libexec:$PATH"
+          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
           ccache -s
 
       - name: Preparing for Installation
@@ -88,6 +91,7 @@ jobs:
 
       - name: Building wheel
         run: |
+          eval "${MATRIX_EVAL}"
           ccache -z;
           python setup.py build;
           python setup.py bdist_wheel;
