@@ -49,6 +49,7 @@ jobs:
             ${ { matrix.config.name } }-ccache-
       
       - name: Configure ccache
+        shell: cmake -P {0}
         run: |
           file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
           set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
