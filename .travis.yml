@@ -264,23 +264,23 @@ matrix:
         - PIP_UPDATE="1"
         - PYTHON_BUILD=true
     
-    # - name: "klayout python2 osx10.11"
-    - name: "cp27-cp27m-macosx_10_11_x86_64.whl"
-      os: osx
-      osx_image: xcode8  # macOS 10.11
-      cache:
-        directories:
-        - ccache
-      addons:
-        homebrew:
-          packages:
-            - ccache
-          update: true
-      env:
-        - MATRIX_EVAL=""
-        - ARCHFLAGS="-std=c++11"
-        - PIP_UPDATE="1"
-        - PYTHON_BUILD=true
+    # # - name: "klayout python2 osx10.11"
+    # - name: "cp27-cp27m-macosx_10_11_x86_64.whl"
+    #   os: osx
+    #   osx_image: xcode8  # macOS 10.11
+    #   cache:
+    #     directories:
+    #     - ccache
+    #   addons:
+    #     homebrew:
+    #       packages:
+    #         - ccache
+    #       update: true
+    #   env:
+    #     - MATRIX_EVAL=""
+    #     - ARCHFLAGS="-std=c++11"
+    #     - PIP_UPDATE="1"
+    #     - PYTHON_BUILD=true
 
     # python 3 osx
     
@@ -358,23 +358,23 @@ matrix:
         - PIP_UPDATE="1"
         - PYTHON_BUILD=true
     
-    # - name: "klayout python3 osx10.11"
-    - name: "cp37-cp37m-macosx_10_11_x86_64.whl"
-      os: osx
-      osx_image: xcode8  # macOS 10.11
-      cache:
-        directories:
-        - ccache
-      addons:
-        homebrew:
-          packages:
-            - ccache
-          update: true
-      env:
-        - MATRIX_EVAL="brew update; brew config; brew upgrade python; brew postinstall python; ls -l /usr/local/opt/python/libexec/bin/; shopt -s expand_aliases; alias python='/usr/local/opt/python/libexec/bin/python'; alias pip='/usr/local/opt/python/libexec/bin/pip';"
-        - ARCHFLAGS="-std=c++11"
-        - PIP_UPDATE="1"
-        - PYTHON_BUILD=true
+    # # - name: "klayout python3 osx10.11"
+    # - name: "cp37-cp37m-macosx_10_11_x86_64.whl"
+    #   os: osx
+    #   osx_image: xcode8  # macOS 10.11
+    #   cache:
+    #     directories:
+    #     - ccache
+    #   addons:
+    #     homebrew:
+    #       packages:
+    #         - ccache
+    #       update: true
+    #   env:
+    #     - MATRIX_EVAL="brew update; brew config; brew upgrade python; brew postinstall python; ls -l /usr/local/opt/python/libexec/bin/; shopt -s expand_aliases; alias python='/usr/local/opt/python/libexec/bin/python'; alias pip='/usr/local/opt/python/libexec/bin/pip';"
+    #     - ARCHFLAGS="-std=c++11"
+    #     - PIP_UPDATE="1"
+    #     - PYTHON_BUILD=true
 
     # KLayout builds for mac
     # Python 3
@@ -416,23 +416,23 @@ matrix:
         - MACOS_VERSION=Sierra
         - KLAYOUT_BUILD=true
 
-    - name: "KLayout macOS 10.11 with py3.7"
-      os: osx
-      osx_image: xcode8 # macOS 10.11
-      cache:
-        directories:
-        - ccache
-      addons:
-        homebrew:
-          packages:
-            - python3
-            - ccache
-          update: true
-      env:
-        - MATRIX_EVAL="brew update; brew config; brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/56c500b569c724b049be7ab9e12d9693f85522f9/Formula/qt.rb"  # Qt 5.11.2
-        - PYTHON_VERSION=B37
-        - MACOS_VERSION=ElCapitan
-        - KLAYOUT_BUILD=true
+    # - name: "KLayout macOS 10.11 with py3.7"
+    #   os: osx
+    #   osx_image: xcode8 # macOS 10.11
+    #   cache:
+    #     directories:
+    #     - ccache
+    #   addons:
+    #     homebrew:
+    #       packages:
+    #         - python3
+    #         - ccache
+    #       update: true
+    #   env:
+    #     - MATRIX_EVAL="brew update; brew config; brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/56c500b569c724b049be7ab9e12d9693f85522f9/Formula/qt.rb"  # Qt 5.11.2
+    #     - PYTHON_VERSION=B37
+    #     - MACOS_VERSION=ElCapitan
+    #     - KLAYOUT_BUILD=true
 
     # Python 2
     - name: "KLayout macOS 10.13 with py2.7"
@@ -471,22 +471,22 @@ matrix:
         - MACOS_VERSION=Sierra
         - KLAYOUT_BUILD=true
 
-    - name: "KLayout macOS 10.11 with py2.7"
-      os: osx
-      osx_image: xcode8 # macOS 10.11
-      cache:
-        directories:
-        - ccache
-      addons:
-        homebrew:
-          packages:
-            - ccache
-          update: true
-      env:
-        - MATRIX_EVAL="brew update; brew config; brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/56c500b569c724b049be7ab9e12d9693f85522f9/Formula/qt.rb"  # Qt 5.11.2
-        - PYTHON_VERSION=Sys
-        - MACOS_VERSION=ElCapitan
-        - KLAYOUT_BUILD=true
+    # - name: "KLayout macOS 10.11 with py2.7"
+    #   os: osx
+    #   osx_image: xcode8 # macOS 10.11
+    #   cache:
+    #     directories:
+    #     - ccache
+    #   addons:
+    #     homebrew:
+    #       packages:
+    #         - ccache
+    #       update: true
+    #   env:
+    #     - MATRIX_EVAL="brew update; brew config; brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/56c500b569c724b049be7ab9e12d9693f85522f9/Formula/qt.rb"  # Qt 5.11.2
+    #     - PYTHON_VERSION=Sys
+    #     - MACOS_VERSION=ElCapitan
+    #     - KLAYOUT_BUILD=true
 
 before_install:
   - env
