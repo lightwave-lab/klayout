@@ -2,7 +2,7 @@
 # https://cristianadam.eu/20200113/speeding-up-c-plus-plus-github-actions-using-ccache/
 # https://docs.github.com/en/free-pro-team@latest/actions/guides/caching-dependencies-to-speed-up-workflows
 
-name: CI
+name: Python Package
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -18,6 +18,7 @@ jobs:
   build:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
+    env:
     strategy:
       fail-fast: false
       matrix:
@@ -25,7 +26,10 @@ jobs:
         - {
             name: "macOS Latest Clang", artifact: "macOS.tar.xz",
             os: macos-latest,
-            cc: "clang", cxx: "clang++"
+            cc: "clang", cxx: "clang++",
+            env: 
+              MATRIX_EVAL: "echo hello there"
+              PIP_UPDATE: "1"
           }
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -44,23 +48,36 @@ jobs:
         uses: actions/cache@v1.1.0
         with:
           path: ccache
-          key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
+          key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
           restore-keys: |
-            ${ { matrix.config.name } }-ccache-
+            ${{ matrix.config.name }}-ccache-
       
       - name: Configure ccache
         shell: cmake -P {0}
         run: |
           file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
           set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
-          set(ENV{CCACHE_DIR} "${ccache_basedir}/.ccache")
+          set(ENV{CCACHE_DIR} "${ccache_basedir}/ccache")
           set(ENV{CCACHE_COMPRESS} "true")
           set(ENV{CCACHE_COMPRESSLEVEL} "6")
           set(ENV{CCACHE_MAXSIZE} "2000M")
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: Install ccache
+        run: |
+          brew install ccache
+          export PATH="/usr/local/opt/ccache/libexec:$PATH"
+          ccache -s
+
+      - name: Preparing for Installation
+        run: |
+          eval "${MATRIX_EVAL}"
+          if [ "${PIP_UPDATE}" == "1" ]; then
+              pip --version;
+              pip install --upgrade pip || sudo pip install --upgrade pip;
+              pip --version;
+              pip install --upgrade setuptools wheel || sudo pip install --upgrade setuptools wheel;
+          fi
+          python -c "import distutils.sysconfig as sysconfig; print(sysconfig.__file__)"
 
       # Runs a set of commands using the runners shell
       - name: Run a multi-line script
