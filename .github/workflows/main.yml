@@ -259,9 +259,11 @@ jobs:
         pip install setuptools wheel twine
     - name: Download all workflow run artifacts
       uses: actions/download-artifact@v2
+    - name: Build source dist
+      run: python setup.py sdist --formats=zip
     - name: Upload to PyPI
       env:
         TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
       run: |
-        ls -R # twine upload **/*.whl
+        ls -R # twine upload **/*.whl *.zip
