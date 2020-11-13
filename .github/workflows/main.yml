@@ -169,7 +169,7 @@ jobs:
         - {
             name: "ubuntu-latest-py27",
             python: "2.7",
-            pypa_py_version: "cp27-27m" 
+            pypa_py_version: "cp27-cp27m" 
           }
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
