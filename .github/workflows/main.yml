@@ -19,7 +19,6 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     env:
-      MATRIX_EVAL: ${{ matrix.config.custom_script }}
       PIP_UPDATE: ${{ matrix.config.pip_update }}
       ARCHFLAGS: "-std=c++11"
     strategy:
@@ -27,11 +26,10 @@ jobs:
       matrix:
         config:
         - {
-            name: "macOS Latest Clang", artifact: "cp38-cp38m-macosx_10_15_x86_64",
+            name: "macos-latest-py38", artifact: "cp38-cp38m-macosx_10_15_x86_64",
             os: macos-latest,
-            cc: "clang", cxx: "clang++",
-            custom_script: "shopt -s expand_aliases; alias python='python3'; alias pip='pip3';",
-            pip_update: "1"
+            pip_update: "1",
+            python_version: "3.8.6"
           }
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -67,7 +65,9 @@ jobs:
 
       - name: Installing the correct python version
         run: |
-          brew install python3
+          brew install pyenv
+          pyenv install ${{ matrix.config.python_version }}
+          pyenv global ${{ matrix.config.python_version }}
       
       # echo "{path}" >> $GITHUB_PATH
       # Prepends a directory to the system PATH variable for all subsequent actions in the current job.
@@ -80,7 +80,6 @@ jobs:
       - name: Preparing for Installation
         run: |
           env
-          eval "${MATRIX_EVAL}"
           if [ "${PIP_UPDATE}" == "1" ]; then
               pip --version;
               pip install --upgrade pip || sudo pip install --upgrade pip;
@@ -91,7 +90,6 @@ jobs:
 
       - name: Building wheel
         run: |
-          eval "${MATRIX_EVAL}"
           ccache -z;
           python setup.py build;
           python setup.py bdist_wheel;
