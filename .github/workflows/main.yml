@@ -146,6 +146,31 @@ jobs:
             python: "3.9.0",
             pypa_py_version: "cp39-cp39"
           }
+        - {
+            name: "ubuntu-latest-py38",
+            python: "3.8.5",
+            pypa_py_version: "cp38-cp38"
+          }
+        - {
+            name: "ubuntu-latest-py37",
+            python: "3.7.9",
+            pypa_py_version: "cp37-cp37m"
+          }
+        - {
+            name: "ubuntu-latest-py36",
+            python: "3.6.12",
+            pypa_py_version: "cp36-cp36m"
+          }
+        - {
+            name: "ubuntu-latest-py35",
+            python: "3.5",
+            pypa_py_version: "cp35-cp35m"
+          }
+        - {
+            name: "ubuntu-latest-py27",
+            python: "2.7",
+            pypa_py_version: "cp27-27m" 
+          }
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -156,7 +181,17 @@ jobs:
         with:
           path: ccache
           key: ${{ matrix.config.name }}-ccache
-      
+
+      # Adding a line to GITHUB_ENV is equivalent to exporting it
+      - name: Configure ccache
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/ccache
+          ccache_basedir=$GITHUB_WORKSPACE
+          echo CCACHE_BASEDIR="${ccache_basedir}" >> $GITHUB_ENV
+          echo CCACHE_DIR="${ccache_basedir}/ccache" >> $GITHUB_ENV
+          echo CCACHE_COMPRESS="true" >> $GITHUB_ENV
+          echo CCACHE_COMPRESSLEVEL="6" >> $GITHUB_ENV
+          echo CCACHE_MAXSIZE="300M" >> $GITHUB_ENV
 
       # echo "{path}" >> $GITHUB_PATH
       # Prepends a directory to the system PATH variable for all subsequent actions in the current job.
@@ -188,14 +223,12 @@ jobs:
           klayout_version=$(python -c 'import setup; print(setup.Config().version())'); 
           mkdir -p deploy/dist-pymod/$klayout_version;
           cp -a wheelhouse/{klayout-*manylinux1*.whl,*.zip} deploy/dist-pymod/$klayout_version;
-          if [ "$TEST_IN_HOST" = true ]; then
-              pip install klayout --no-index -f ./wheelhouse;
-              python testdata/pymod/import_db.py;
-              python testdata/pymod/import_rdb.py;
-              python testdata/pymod/import_tl.py;
-              python testdata/pymod/import_lib.py;
-              python testdata/pymod/pya_tests.py;
-          fi
+          pip install klayout --no-index -f ./wheelhouse;
+          python testdata/pymod/import_db.py;
+          python testdata/pymod/import_rdb.py;
+          python testdata/pymod/import_tl.py;
+          python testdata/pymod/import_lib.py;
+          python testdata/pymod/pya_tests.py;
 
       - name: Build report
         run: |
