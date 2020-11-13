@@ -64,7 +64,7 @@ jobs:
           echo CCACHE_MAXSIZE="2000M" >> $GITHUB_ENV
 
       - name: Install python version
-        uses: gabrielfalcao/pyenv-action@v5
+        uses: gabrielfalcao/pyenv-action@v6
         with:
           default: "${{ matrix.config.python }}"
           command: pip install -U pip  # upgrade pip after installing python
