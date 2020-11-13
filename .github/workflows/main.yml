@@ -20,7 +20,6 @@ jobs:
     runs-on: macos-latest
     env:
       ARCHFLAGS: "-std=c++11"
-      DOCKER_IMAGE: "quay.io/pypa/manylinux1_x86_64"
     strategy:
       fail-fast: false
       matrix:
@@ -120,24 +119,6 @@ jobs:
           python -c 'import klayout.rdb as rdb; print(dir(rdb))';
           python -c 'import klayout.tl as tl; print(dir(tl))';
 
-      - name: Building Docker wheel
-        run : |
-          mkdir -p ccache;
-          mkdir -p wheelhouse;
-          docker pull $DOCKER_IMAGE;
-          docker run --rm -e DOCKER_IMAGE -e PY_VERSION -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD "/io/ci-scripts/docker/docker_build.sh";
-          klayout_version=$(python -c 'import setup; print(setup.Config().version())'); 
-          mkdir -p deploy/dist-pymod/$klayout_version;
-          cp -a wheelhouse/{klayout-*manylinux1*.whl,*.zip} deploy/dist-pymod/$klayout_version;
-          if [ "$TEST_IN_HOST" = true ]; then
-              pip install klayout --no-index -f ./wheelhouse;
-              python testdata/pymod/import_db.py;
-              python testdata/pymod/import_rdb.py;
-              python testdata/pymod/import_tl.py;
-              python testdata/pymod/import_lib.py;
-              python testdata/pymod/pya_tests.py;
-          fi
-
       - name: Build report
         run: |
           ccache -s
@@ -155,13 +136,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_IMAGE: "quay.io/pypa/manylinux1_x86_64"
+      PY_VERSION: "${{ matrix.config.pypa_py_version }}"
     strategy:
       fail-fast: false
       matrix:
         config:
         - {
             name: "ubuntu-latest-py39",
-            python: "3.9.0"
+            python: "3.9.0",
+            pypa_py_version: "cp39-cp39"
           }
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
