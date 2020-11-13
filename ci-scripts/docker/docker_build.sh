@@ -36,7 +36,7 @@ elif [[ $DOCKER_IMAGE == "quay.io/pypa/manylinux1_i686" ]]; then
 fi
 echo $PATH
 export CCACHE_DIR="/io/ccache"
-ccache -M 5 G  # set cache size to 5 G
+ccache -M 300M  # set cache size to 300M
 
 # Download proper auditwheel program
 git clone https://github.com/thomaslima/auditwheel.git /tmp/auditwheel
