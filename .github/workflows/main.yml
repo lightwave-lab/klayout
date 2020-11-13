@@ -19,19 +19,46 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     env:
-      PIP_UPDATE: ${{ matrix.config.pip_update }}
       ARCHFLAGS: "-std=c++11"
     strategy:
       fail-fast: false
       matrix:
         config:
         - {
+            name: "macos-latest-py39", artifact: "cp39-cp39m-macosx_10_15_x86_64",
+            os: macos-latest,
+            python: "3.9.0"
+          }
+        - {
             name: "macos-latest-py38", artifact: "cp38-cp38m-macosx_10_15_x86_64",
             os: macos-latest,
-            pip_update: "1",
             python: "3.8.5"
           }
-
+        - {
+            name: "macos-latest-py37", artifact: "cp37-cp37m-macosx_10_15_x86_64",
+            os: macos-latest,
+            python: "3.7.9"
+          }
+        - {
+            name: "macos-latest-py36", artifact: "cp36-cp36m-macosx_10_15_x86_64",
+            os: macos-latest,
+            python: "3.6.12"
+          }
+        - {
+            name: "macos-latest-py35", artifact: "cp35-cp35m-macosx_10_15_x86_64",
+            os: macos-latest,
+            python: "3.5"
+          }
+        - {
+            name: "macos-latest-py34", artifact: "cp34-cp34m-macosx_10_15_x86_64",
+            os: macos-latest,
+            python: "3.4"
+          }
+        - {
+            name: "macos-latest-py27", artifact: "cp27-cp27m-macosx_10_15_x86_64",
+            os: macos-latest,
+            python: "2.7"
+          }
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -86,16 +113,11 @@ jobs:
       #     pip install -U pip setuptools wheel
       #     env
 
-      - name: Preparing for Installation
+      - name: Installation debug
         run: |
-          env
-          if [ "${PIP_UPDATE}" == "1" ]; then
-              pip --version;
-              pip install --upgrade pip || sudo pip install --upgrade pip;
-              pip --version;
-              pip install --upgrade setuptools wheel || sudo pip install --upgrade setuptools wheel;
-          fi
           python -c "import distutils.sysconfig as sysconfig; print(sysconfig.__file__)"
+          env
+          ccache -s
 
       - name: Building wheel
         run: |
