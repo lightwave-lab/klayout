@@ -64,13 +64,12 @@ jobs:
           echo CCACHE_MAXSIZE="2000M" >> $GITHUB_ENV
 
       - name: Install python version
-        with:
-          default: "${{ matrix.config.python }}"
-          command: pip install -U pip  # upgrade pip after installing python
         run: |
           brew install pyenv
           pyenv install ${{ matrix.config.python }}
           pyenv local ${{ matrix.config.python }}
+          echo PYENV_VERSION=${{ matrix.config.python }} >> $GITHUB_ENV
+          pip install -U pip setuptools wheel
           env
 
       # echo "{path}" >> $GITHUB_PATH
