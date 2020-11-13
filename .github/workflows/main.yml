@@ -63,15 +63,6 @@ jobs:
           echo CCACHE_COMPRESSLEVEL="6" >> $GITHUB_ENV
           echo CCACHE_MAXSIZE="2000M" >> $GITHUB_ENV
 
-      - name: Install python version
-        run: |
-          brew install pyenv
-          pyenv install ${{ matrix.config.python }}
-          pyenv local ${{ matrix.config.python }}
-          echo PYENV_VERSION=${{ matrix.config.python }} >> $GITHUB_ENV
-          pip install -U pip setuptools wheel
-          env
-
       # echo "{path}" >> $GITHUB_PATH
       # Prepends a directory to the system PATH variable for all subsequent actions in the current job.
       - name: Install ccache
@@ -79,6 +70,21 @@ jobs:
           brew install ccache
           echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
           ccache -s
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.config.python }}
+          architecture: x64
+
+      # - name: Install python version
+      #   run: |
+      #     brew install pyenv
+      #     pyenv install ${{ matrix.config.python }}
+      #     pyenv local ${{ matrix.config.python }}
+      #     echo PYENV_VERSION=${{ matrix.config.python }} >> $GITHUB_ENV
+      #     pip install -U pip setuptools wheel
+      #     env
 
       - name: Preparing for Installation
         run: |
