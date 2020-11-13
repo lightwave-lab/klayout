@@ -179,8 +179,8 @@ jobs:
       # Prepends a directory to the system PATH variable for all subsequent actions in the current job.
       - name: Install ccache
         run: |
-          apt-get install -y ccache
-          /usr/sbin/update-ccache-symlinks
+          sudo apt-get install -y ccache
+          sudo /usr/sbin/update-ccache-symlinks
           echo "/usr/lib/ccache" >> $GITHUB_PATH
           ccache -s
 
