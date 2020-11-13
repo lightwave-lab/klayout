@@ -29,7 +29,7 @@ jobs:
             name: "macos-latest-py38", artifact: "cp38-cp38m-macosx_10_15_x86_64",
             os: macos-latest,
             pip_update: "1",
-            python_version: "3.8.6"
+            python: "3.8.6"
           }
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -63,11 +63,11 @@ jobs:
           echo CCACHE_COMPRESSLEVEL="6" >> $GITHUB_ENV
           echo CCACHE_MAXSIZE="2000M" >> $GITHUB_ENV
 
-      - name: Installing the correct python version
-        run: |
-          brew install pyenv
-          pyenv install ${{ matrix.config.python_version }}
-          pyenv global ${{ matrix.config.python_version }}
+      - name: Install python version
+        uses: gabrielfalcao/pyenv-action@v5
+        with:
+          default: "${{ matrix.config.python }}"
+          command: pip install -U pip  # upgrade pip after installing python
       
       # echo "{path}" >> $GITHUB_PATH
       # Prepends a directory to the system PATH variable for all subsequent actions in the current job.
