@@ -15,43 +15,38 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  build:
+  build-macos:
     name: ${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }}
+    runs-on: macos-latest
     env:
       ARCHFLAGS: "-std=c++11"
+      DOCKER_IMAGE: "quay.io/pypa/manylinux1_x86_64"
     strategy:
       fail-fast: false
       matrix:
         config:
         - {
-            name: "macos-latest-py39", artifact: "cp39-cp39m-macosx_10_15_x86_64",
-            os: macos-latest,
+            name: "macos-latest-py39",
             python: "3.9.0"
           }
         - {
-            name: "macos-latest-py38", artifact: "cp38-cp38m-macosx_10_15_x86_64",
-            os: macos-latest,
+            name: "macos-latest-py38",
             python: "3.8.5"
           }
         - {
-            name: "macos-latest-py37", artifact: "cp37-cp37m-macosx_10_15_x86_64",
-            os: macos-latest,
+            name: "macos-latest-py37",
             python: "3.7.9"
           }
         - {
-            name: "macos-latest-py36", artifact: "cp36-cp36m-macosx_10_15_x86_64",
-            os: macos-latest,
+            name: "macos-latest-py36",
             python: "3.6.12"
           }
         - {
-            name: "macos-latest-py35", artifact: "cp35-cp35m-macosx_10_15_x86_64",
-            os: macos-latest,
+            name: "macos-latest-py35",
             python: "3.5"
           }
         - {
-            name: "macos-latest-py27", artifact: "cp27-cp27m-macosx_10_15_x86_64",
-            os: macos-latest,
+            name: "macos-latest-py27",
             python: "2.7"
           }
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -105,7 +100,7 @@ jobs:
           env
           ccache -s
 
-      - name: Building wheel
+      - name: Building native wheel
         run: |
           ccache -z;
           pip install -U setuptools wheel
@@ -125,6 +120,24 @@ jobs:
           python -c 'import klayout.rdb as rdb; print(dir(rdb))';
           python -c 'import klayout.tl as tl; print(dir(tl))';
 
+      - name: Building Docker wheel
+        run : |
+          mkdir -p ccache;
+          mkdir -p wheelhouse;
+          docker pull $DOCKER_IMAGE;
+          docker run --rm -e DOCKER_IMAGE -e PY_VERSION -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD "/io/ci-scripts/docker/docker_build.sh";
+          klayout_version=$(python -c 'import setup; print(setup.Config().version())'); 
+          mkdir -p deploy/dist-pymod/$klayout_version;
+          cp -a wheelhouse/{klayout-*manylinux1*.whl,*.zip} deploy/dist-pymod/$klayout_version;
+          if [ "$TEST_IN_HOST" = true ]; then
+              pip install klayout --no-index -f ./wheelhouse;
+              python testdata/pymod/import_db.py;
+              python testdata/pymod/import_rdb.py;
+              python testdata/pymod/import_tl.py;
+              python testdata/pymod/import_lib.py;
+              python testdata/pymod/pya_tests.py;
+          fi
+
       - name: Build report
         run: |
           ccache -s
@@ -133,14 +146,90 @@ jobs:
       - name: Archive production artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: wheel-${{ matrix.config.artifact }}
+          name: wheel-${{ matrix.config.name }}
           path: |
             dist/*.whl
+
+  build-ubuntu:
+    name: ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE: "quay.io/pypa/manylinux1_x86_64"
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "ubuntu-latest-py39",
+            python: "3.9.0"
+          }
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Caching ccache files
+        uses: actions/cache@v1.1.0
+        with:
+          path: ccache
+          key: ${{ matrix.config.name }}-ccache
+      
+
+      # echo "{path}" >> $GITHUB_PATH
+      # Prepends a directory to the system PATH variable for all subsequent actions in the current job.
+      - name: Install ccache
+        run: |
+          apt-get install -y ccache
+          /usr/sbin/update-ccache-symlinks
+          echo "/usr/lib/ccache" >> $GITHUB_PATH
+          ccache -s
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.config.python }}
+          architecture: x64
+
+      - name: Installation debug
+        run: |
+          python -c "import distutils.sysconfig as sysconfig; print(sysconfig.__file__)"
+          env
+          ccache -s
+
+      - name: Building Docker wheel
+        run : |
+          mkdir -p ccache;
+          mkdir -p wheelhouse;
+          docker pull $DOCKER_IMAGE;
+          docker run --rm -e DOCKER_IMAGE -e PY_VERSION -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD "/io/ci-scripts/docker/docker_build.sh";
+          klayout_version=$(python -c 'import setup; print(setup.Config().version())'); 
+          mkdir -p deploy/dist-pymod/$klayout_version;
+          cp -a wheelhouse/{klayout-*manylinux1*.whl,*.zip} deploy/dist-pymod/$klayout_version;
+          if [ "$TEST_IN_HOST" = true ]; then
+              pip install klayout --no-index -f ./wheelhouse;
+              python testdata/pymod/import_db.py;
+              python testdata/pymod/import_rdb.py;
+              python testdata/pymod/import_tl.py;
+              python testdata/pymod/import_lib.py;
+              python testdata/pymod/pya_tests.py;
+          fi
+
+      - name: Build report
+        run: |
+          ls -l wheelhouse
+          ccache -s
+      
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: wheel-${{ matrix.config.name }}
+          path: |
+            wheelhouse/*.whl
 
   deploy:
     name: Deploy to PyPI
     runs-on: ubuntu-latest
-    needs: build
+    needs: [ build-macos, build-ubuntu ]
     if: contains(github.ref, 'refs/heads')
     steps:
     - uses: actions/checkout@v2
@@ -156,7 +245,7 @@ jobs:
       uses: actions/download-artifact@v2
     - name: Upload to PyPI
       env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
       run: |
         ls -R # twine upload **/*.whl
