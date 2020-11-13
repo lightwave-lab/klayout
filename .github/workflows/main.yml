@@ -83,7 +83,7 @@ jobs:
           echo CCACHE_DIR="${ccache_basedir}/ccache" >> $GITHUB_ENV
           echo CCACHE_COMPRESS="true" >> $GITHUB_ENV
           echo CCACHE_COMPRESSLEVEL="6" >> $GITHUB_ENV
-          echo CCACHE_MAXSIZE="2000M" >> $GITHUB_ENV
+          echo CCACHE_MAXSIZE="400M" >> $GITHUB_ENV
 
       # echo "{path}" >> $GITHUB_PATH
       # Prepends a directory to the system PATH variable for all subsequent actions in the current job.
