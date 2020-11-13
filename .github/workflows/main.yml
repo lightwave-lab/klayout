@@ -50,11 +50,6 @@ jobs:
             python: "3.5"
           }
         - {
-            name: "macos-latest-py34", artifact: "cp34-cp34m-macosx_10_15_x86_64",
-            os: macos-latest,
-            python: "3.4.10"
-          }
-        - {
             name: "macos-latest-py27", artifact: "cp27-cp27m-macosx_10_15_x86_64",
             os: macos-latest,
             python: "2.7"
