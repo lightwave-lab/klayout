@@ -119,4 +119,4 @@ jobs:
         with:
           name: wheel-${{ matrix.config.artifact }}
           path: |
-            deploy/dist-pymod/$KLAYOUT_VERSION/
+            dist/*.whl
