@@ -138,6 +138,7 @@ jobs:
     env:
       DOCKER_IMAGE: "quay.io/pypa/manylinux1_x86_64"
       PY_VERSION: "${{ matrix.config.pypa_py_version }}"
+      TEST_IN_HOST: "${{ matrix.config.test_in_host }}"
     strategy:
       fail-fast: false
       matrix:
@@ -145,32 +146,44 @@ jobs:
         - {
             name: "ubuntu-latest-py39",
             python: "3.9.0",
-            pypa_py_version: "cp39-cp39"
+            pypa_py_version: "cp39-cp39",
+            test_in_host: "true"
           }
         - {
             name: "ubuntu-latest-py38",
             python: "3.8.5",
-            pypa_py_version: "cp38-cp38"
+            pypa_py_version: "cp38-cp38",
+            test_in_host: "true"
           }
         - {
             name: "ubuntu-latest-py37",
             python: "3.7.9",
-            pypa_py_version: "cp37-cp37m"
+            pypa_py_version: "cp37-cp37m",
+            test_in_host: "true"
           }
         - {
             name: "ubuntu-latest-py36",
             python: "3.6.12",
-            pypa_py_version: "cp36-cp36m"
+            pypa_py_version: "cp36-cp36m",
+            test_in_host: "true"
           }
         - {
             name: "ubuntu-latest-py35",
             python: "3.5",
-            pypa_py_version: "cp35-cp35m"
+            pypa_py_version: "cp35-cp35m",
+            test_in_host: "true"
           }
         - {
             name: "ubuntu-latest-py27",
             python: "2.7",
-            pypa_py_version: "cp27-cp27m" 
+            pypa_py_version: "cp27-cp27m",
+            test_in_host: "false"  # python 2.7 uses ucs4 (mu), so this test fails.
+          }  
+        - {
+            name: "ubuntu-latest-py27",
+            python: "2.7",
+            pypa_py_version: "cp27-cp27mu" ,
+            test_in_host: "true"
           }
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -224,11 +237,13 @@ jobs:
           klayout_version=$(python -c 'import setup; print(setup.Config().version())'); 
           mkdir -p deploy/dist-pymod/$klayout_version;
           cp -a wheelhouse/klayout-*manylinux1*.whl deploy/dist-pymod/$klayout_version;
-          pip install klayout --no-index -f ./wheelhouse;
-          python testdata/pymod/import_db.py;
-          python testdata/pymod/import_rdb.py;
-          python testdata/pymod/import_tl.py;
-          python testdata/pymod/pya_tests.py;
+          if [ "$TEST_IN_HOST" = "true" ]; then
+            pip install klayout --no-index -f ./wheelhouse;
+            python testdata/pymod/import_db.py;
+            python testdata/pymod/import_rdb.py;
+            python testdata/pymod/import_tl.py;
+            python testdata/pymod/pya_tests.py;
+          fi
 
       - name: Build report
         run: |
