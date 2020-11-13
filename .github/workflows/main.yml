@@ -240,7 +240,7 @@ jobs:
         with:
           name: wheel-${{ matrix.config.name }}
           path: |
-            wheelhouse/*.whl
+            wheelhouse/*manylinux*.whl
 
   deploy:
     name: Deploy to PyPI
