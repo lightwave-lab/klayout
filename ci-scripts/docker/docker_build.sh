@@ -38,6 +38,7 @@ echo $PATH
 export CCACHE_DIR="/io/ccache"
 export CCACHE_COMPILERCHECK="content"
 export CCACHE_COMPRESS="true"
+export CCACHE_COMPRESSLEVEL="6"
 ccache -M 300M  # set cache size to 300M
 
 # Download proper auditwheel program
