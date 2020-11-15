@@ -174,13 +174,13 @@ jobs:
             test_in_host: "true"
           }
         - {
-            name: "ubuntu-latest-py27",
+            name: "ubuntu-latest-py27m",
             python: "2.7",
             pypa_py_version: "cp27-cp27m",
             test_in_host: "false"  # python 2.7 uses ucs4 (mu), so this test fails.
           }
         - {
-            name: "ubuntu-latest-py27",
+            name: "ubuntu-latest-py27mu",
             python: "2.7",
             pypa_py_version: "cp27-cp27mu" ,
             test_in_host: "true"
