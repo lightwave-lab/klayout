@@ -59,7 +59,7 @@ jobs:
         with:
           path: ccache
           key: ${{ matrix.config.name }}-ccache
-      
+
       # Adding a line to GITHUB_ENV is equivalent to exporting it
       - name: Configure ccache
         run: |
@@ -124,7 +124,7 @@ jobs:
         run: |
           ccache -s
           ls -l dist/
-      
+
       - name: Archive production artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -178,7 +178,7 @@ jobs:
             python: "2.7",
             pypa_py_version: "cp27-cp27m",
             test_in_host: "false"  # python 2.7 uses ucs4 (mu), so this test fails.
-          }  
+          }
         - {
             name: "ubuntu-latest-py27",
             python: "2.7",
@@ -234,7 +234,7 @@ jobs:
           mkdir -p wheelhouse;
           docker pull $DOCKER_IMAGE;
           docker run --rm -e DOCKER_IMAGE -e PY_VERSION -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD "/io/ci-scripts/docker/docker_build.sh";
-          klayout_version=$(python -c 'import setup; print(setup.Config().version())'); 
+          klayout_version=$(python -c 'import setup; print(setup.Config().version())');
           mkdir -p deploy/dist-pymod/$klayout_version;
           cp -a wheelhouse/klayout-*manylinux1*.whl deploy/dist-pymod/$klayout_version;
           if [ "$TEST_IN_HOST" = "true" ]; then
@@ -249,7 +249,7 @@ jobs:
         run: |
           ls -l wheelhouse
           ccache -s
-      
+
       - name: Archive production artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -281,4 +281,4 @@ jobs:
         TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
       run: |
-        ls -R # twine upload **/*.whl *.zip
+        find . | grep '\.whl\|\.zip' # twine upload **/*.whl *.zip

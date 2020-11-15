@@ -15,8 +15,8 @@ echo PY_VERSION=$PY_VERSION
 echo DOCKER_IMAGE=$DOCKER_IMAGE
 
 # sometimes the epel server is down. retry 5 times
-for i in $(seq 1 5); do 
-    yum install -y zlib-devel ccache zip git && s=0 && break || s=$? && sleep 15; 
+for i in $(seq 1 5); do
+    yum install -y zlib-devel ccache zip git && s=0 && break || s=$? && sleep 15;
 done
 
 [ $s -eq 0 ] || exit $s
@@ -36,6 +36,8 @@ elif [[ $DOCKER_IMAGE == "quay.io/pypa/manylinux1_i686" ]]; then
 fi
 echo $PATH
 export CCACHE_DIR="/io/ccache"
+export CCACHE_COMPILERCHECK="content"
+export CCACHE_COMPRESS="true"
 ccache -M 300M  # set cache size to 300M
 
 # Download proper auditwheel program
