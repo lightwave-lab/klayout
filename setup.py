@@ -60,6 +60,7 @@ import glob
 import os
 import re
 import platform
+import sys
 from distutils.errors import CompileError
 import distutils.command.build_ext
 import setuptools.command.build_ext
@@ -94,8 +95,12 @@ def parallelCCompile(self, sources, output_dir=None, macros=None, include_dirs=N
             except CompileError:
                 n_tries -= 1
                 print("Building", obj, "has failed. Trying again.")
+            except KeyboardInterrupt:
+                sys.exit(1)
             else:
                 break
+        if n_tries == 0:
+            raise CompileError("Building %s has failed" % obj)
     # convert to list, imap is evaluated on-demand
     list(multiprocessing.pool.ThreadPool(N).map(_single_compile, objects))
     return objects

@@ -35,11 +35,14 @@ elif [[ $DOCKER_IMAGE == "quay.io/pypa/manylinux1_i686" ]]; then
     export PATH="/usr/lib/ccache/:$PATH"
 fi
 echo $PATH
-export CCACHE_DIR="/io/ccache"
-export CCACHE_COMPILERCHECK="content"
-export CCACHE_COMPRESS="true"
-export CCACHE_COMPRESSLEVEL="6"
-ccache -M 300M  # set cache size to 300M
+
+# the following has no effect on manylinux1 because ccache version is 2.4 (very old)
+# export CCACHE_COMPILERCHECK="content"
+# export CCACHE_COMPRESS="true"
+# export CCACHE_COMPRESSLEVEL="6"
+# export CCACHE_DEBUG="true"
+ccache -V
+ccache -M 300M  # set cache size
 
 # Download proper auditwheel program
 git clone https://github.com/thomaslima/auditwheel.git /tmp/auditwheel
